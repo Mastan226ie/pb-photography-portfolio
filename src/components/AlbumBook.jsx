@@ -166,7 +166,7 @@ const AlbumBook = ({ album, onClose }) => {
     if (!isFlipping && !isLast) {
       setIsFlipping(true)
       bookRef.current?.pageFlip().flipNext()
-      setTimeout(() => setIsFlipping(false), 700)
+      setTimeout(() => setIsFlipping(false), 500)
     }
   }, [isFlipping, isLast])
 
@@ -174,7 +174,7 @@ const AlbumBook = ({ album, onClose }) => {
     if (!isFlipping && !isFirst) {
       setIsFlipping(true)
       bookRef.current?.pageFlip().flipPrev()
-      setTimeout(() => setIsFlipping(false), 700)
+      setTimeout(() => setIsFlipping(false), 500)
     }
   }, [isFlipping, isFirst])
 
@@ -263,7 +263,7 @@ const AlbumBook = ({ album, onClose }) => {
             onFlip={onFlip}
             className="book-flip"
             style={{ fontFamily: "'Playfair Display', serif" }}
-            flippingTime={700}
+            flippingTime={450}
             usePortrait={false}
             startZIndex={0}
             autoSize={false}
@@ -330,11 +330,11 @@ const AlbumBook = ({ album, onClose }) => {
                 const current = bookRef.current?.pageFlip().getCurrentPageIndex() || 0
                 if (target > current) {
                   for (let j = 0; j < (target - current) / 2; j++) {
-                    setTimeout(() => bookRef.current?.pageFlip().flipNext(), j * 720)
+                    setTimeout(() => bookRef.current?.pageFlip().flipNext(), j * 500)
                   }
                 } else {
                   for (let j = 0; j < (current - target) / 2; j++) {
-                    setTimeout(() => bookRef.current?.pageFlip().flipPrev(), j * 720)
+                    setTimeout(() => bookRef.current?.pageFlip().flipPrev(), j * 500)
                   }
                 }
               }}

@@ -1,86 +1,176 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
+import { motion, useScroll, useSpring } from 'framer-motion'
 import { Camera, Menu, X } from 'lucide-react'
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
 
+  /* ── Scroll progress bar ────────────── */
+  const { scrollYProgress } = useScroll()
+  const scaleX = useSpring(scrollYProgress, { stiffness: 200, damping: 30 })
+
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 50)
-    }
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
+    const onScroll = () => setScrolled(window.scrollY > 60)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
+  const closeMenu = useCallback(() => setIsOpen(false), [])
+
   const navLinks = [
-    { name: 'Home', href: '#home' },
-    { name: 'Albums', href: '#albums' },
+    { name: 'Home',         href: '#home'         },
+    { name: 'Journey',      href: '#journey'      },
+    { name: 'Albums',       href: '#albums'       },
     { name: 'Testimonials', href: '#testimonials' },
-    { name: 'Contact', href: '#contact' },
+    { name: 'Contact',      href: '#contact'      },
   ]
 
   return (
-    <nav className={`fixed w-full z-50 transition-all duration-300 ${scrolled ? 'bg-black/95 backdrop-blur-md py-4' : 'bg-transparent py-6'}`}>
-      <div className="container-custom flex justify-between items-center">
-        <a href="#home" className="flex items-center space-x-2 text-2xl font-playfair font-bold">
-          <Camera className="w-8 h-8 text-amber-500" />
-          <span className="text-white">Lens<span className="text-amber-500">&</span>Light</span>
-        </a>
+    <>
+      {/* ── Scroll Progress Bar ──────────── */}
+      <motion.div
+        style={{
+          scaleX,
+          transformOrigin: '0%',
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 2,
+          background: 'linear-gradient(to right, #f59e0b, #d97706)',
+          zIndex: 60,
+        }}
+        aria-hidden="true"
+      />
 
-        {/* Desktop Menu */}
-        <div className="hidden md:flex space-x-8">
-          {navLinks.map((link) => (
-            <a
-              key={link.name}
-              href={link.href}
-              className="text-white hover:text-amber-500 transition-colors duration-300 font-medium"
-            >
-              {link.name}
-            </a>
-          ))}
+      {/* ── Navbar ───────────────────────── */}
+      <motion.nav
+        initial={{ y: -80, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+        className={`fixed w-full z-50 transition-all duration-500 ${
+          scrolled
+            ? 'py-3'
+            : 'py-5'
+        }`}
+        style={{
+          background: scrolled
+            ? 'rgba(0, 0, 0, 0.85)'
+            : 'transparent',
+          backdropFilter: scrolled ? 'blur(12px)' : 'none',
+          WebkitBackdropFilter: scrolled ? 'blur(12px)' : 'none',
+          borderBottom: scrolled ? '1px solid rgba(255,255,255,0.06)' : 'none',
+          willChange: 'background, backdrop-filter',
+        }}
+      >
+        <div className="container-custom flex justify-between items-center">
+          {/* ── Logo ──────────────────────── */}
           <a
-            href="#contact"
-            className="bg-amber-500 hover:bg-amber-600 px-6 py-2 rounded-full text-white font-semibold transition-all duration-300"
+            href="#home"
+            className="flex items-center gap-3 group"
+            aria-label="PB Photography — Home"
           >
-            Book Now
+            {/* Camera icon */}
+            <motion.div
+              whileHover={{ rotate: 15, scale: 1.1 }}
+              transition={{ type: 'spring', stiffness: 300 }}
+              className="w-9 h-9 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center"
+            >
+              <Camera className="w-5 h-5 text-amber-400" />
+            </motion.div>
+            <div className="flex flex-col leading-none">
+              <span className="font-playfair font-bold text-xl text-white">
+                PB<span className="text-amber-500">.</span>
+              </span>
+              <span className="text-[9px] tracking-[0.25em] text-white/40 uppercase font-poppins">
+                Photography
+              </span>
+            </div>
           </a>
-        </div>
 
-        {/* Mobile Menu Button */}
-        <button
-          className="md:hidden text-white"
-          onClick={() => setIsOpen(!isOpen)}
-        >
-          {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-        </button>
-      </div>
-
-      {/* Mobile Menu */}
-      {isOpen && (
-        <div className="md:hidden bg-black/95 backdrop-blur-md absolute top-full left-0 w-full py-4">
-          <div className="flex flex-col items-center space-y-4">
+          {/* ── Desktop Links ─────────────── */}
+          <div className="hidden md:flex items-center gap-8">
             {navLinks.map((link) => (
               <a
                 key={link.name}
                 href={link.href}
-                className="text-white hover:text-amber-500 transition-colors duration-300 font-medium"
-                onClick={() => setIsOpen(false)}
+                className="relative text-white/70 hover:text-amber-400 text-sm font-poppins font-medium group"
               >
                 {link.name}
+                {/* Underline hover */}
+                <span
+                  className="absolute -bottom-0.5 left-0 right-0 h-px bg-amber-400 origin-left group-hover:scale-x-100 scale-x-0"
+                  style={{ transition: 'transform 0.25s ease' }}
+                />
               </a>
             ))}
-            <a
+
+            {/* Book Now CTA */}
+            <motion.a
               href="#contact"
-              className="bg-amber-500 hover:bg-amber-600 px-6 py-2 rounded-full text-white font-semibold transition-all duration-300"
-              onClick={() => setIsOpen(false)}
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.97 }}
+              className="bg-amber-500 hover:bg-amber-400 text-black font-semibold text-sm px-5 py-2.5 rounded-full font-poppins"
+              style={{ transition: 'background-color 0.2s ease' }}
             >
               Book Now
-            </a>
+            </motion.a>
           </div>
+
+          {/* ── Mobile Hamburger ──────────── */}
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            className="md:hidden w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white"
+            onClick={() => setIsOpen(v => !v)}
+            aria-label={isOpen ? 'Close menu' : 'Open menu'}
+          >
+            {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </motion.button>
         </div>
-      )}
-    </nav>
+
+        {/* ── Mobile Menu ───────────────────────── */}
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.25 }}
+            className="md:hidden mt-3 mx-4 rounded-2xl overflow-hidden"
+            style={{
+              background: 'rgba(10,10,10,0.95)',
+              backdropFilter: 'blur(16px)',
+              border: '1px solid rgba(255,255,255,0.08)',
+            }}
+          >
+            <div className="flex flex-col py-4">
+              {navLinks.map((link, i) => (
+                <motion.a
+                  key={link.name}
+                  href={link.href}
+                  initial={{ opacity: 0, x: -12 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  className="px-6 py-3 text-white/70 hover:text-amber-400 font-poppins text-sm font-medium"
+                  onClick={closeMenu}
+                >
+                  {link.name}
+                </motion.a>
+              ))}
+              <div className="px-6 pt-2">
+                <a
+                  href="#contact"
+                  className="block w-full bg-amber-500 hover:bg-amber-400 text-black font-semibold text-sm px-5 py-3 rounded-full text-center font-poppins"
+                  onClick={closeMenu}
+                >
+                  Book Now
+                </a>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </motion.nav>
+    </>
   )
 }
 
