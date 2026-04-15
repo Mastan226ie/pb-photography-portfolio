@@ -15,74 +15,55 @@ import { motion, useScroll, useTransform } from 'framer-motion'
 const LAYERS = [
   {
     id: 'lens1',
-    label: 'Giant Lens',
-    entryZ: 1200,
-    exitZ: -300,
-    focalAt: 0.12,  // scroll progress where this layer is "in focus"
+    focalAt: 0.15,
     content: <LensElement size={480} color="#f59e0b" opacity={0.6} />,
-    offsetX: '0%',
-    offsetY: '-5%',
   },
   {
-    id: 'prism',
-    label: 'Prism',
-    entryZ: 900,
-    exitZ: -500,
-    focalAt: 0.28,
-    content: <PrismElement />,
-    offsetX: '20%',
-    offsetY: '10%',
+    id: 'aperture',
+    focalAt: 0.29,
+    content: <ApertureElement />,
+  },
+  {
+    id: 'midcopy',
+    focalAt: 0.43,
+    content: <MidCopy />,
   },
   {
     id: 'filmstrip',
-    label: 'Film Strip',
-    entryZ: 600,
-    exitZ: -700,
-    focalAt: 0.48,
+    focalAt: 0.57,
     content: <FilmStrip />,
-    offsetX: '-18%',
-    offsetY: '5%',
   },
   {
     id: 'photoframe',
-    label: 'Photo Frame',
-    entryZ: 300,
-    exitZ: -900,
-    focalAt: 0.68,
+    focalAt: 0.71,
     content: <FloatingFrame />,
-    offsetX: '12%',
-    offsetY: '-8%',
   },
   {
     id: 'titlecard',
-    label: 'Title Card',
-    entryZ: 0,
-    exitZ: -1200,
     focalAt: 0.85,
     content: <TitleCard />,
-    offsetX: '0%',
-    offsetY: '0%',
   },
 ]
 
 /* ── Helper: map scroll [0→1] to Z position ─ */
 function useLayerTransforms(scrollProgress, layer) {
+  // By forcing Z to hit 0 EXACTLY at focalAt, layers perfectly pass through the screen.
   const z = useTransform(
     scrollProgress,
-    [0, 1],
-    [layer.entryZ, layer.exitZ]
+    [layer.focalAt - 0.25, layer.focalAt, layer.focalAt + 0.25],
+    [900, 0, -600]
   )
 
-  // Opacity: full at focal point, fades as distance increases
+  // Strict opacity envelope that reaches 0 well before the next layer dominates.
   const opacity = useTransform(scrollProgress, (v) => {
     const dist = Math.abs(v - layer.focalAt)
-    return Math.max(0, 1 - dist * 3.5)
+    // Drops to 0 when dist >= 0.12, ensuring strict "one by one" separation.
+    return Math.max(0, 1 - dist * 8.33)
   })
 
   // Scale: slight depth-of-field scale bonus at focus
   const scale = useTransform(scrollProgress, (v) => {
-    const dist = Math.abs(v - layer.focalAt)
-    return 1 + Math.max(0, 0.06 - dist * 0.2)
+    return 1
   })
 
   return { z, opacity, scale }
@@ -96,30 +77,26 @@ const ScrollJourney = () => {
     offset: ['start start', 'end end'],
   })
 
-  // Central copy that fades in at mid-scroll
-  const midOpacity = useTransform(scrollYProgress, [0.3, 0.5, 0.7, 0.9], [0, 1, 1, 0])
-  const midY = useTransform(scrollYProgress, [0.3, 0.5], [40, 0])
-
   // Text that slides up at end
-  const endOpacity = useTransform(scrollYProgress, [0.78, 0.9], [0, 1])
-  const endY = useTransform(scrollYProgress, [0.78, 0.9], [60, 0])
+  const endOpacity = useTransform(scrollYProgress, [0.88, 0.96], [0, 1])
+  const endY = useTransform(scrollYProgress, [0.88, 0.96], [60, 0])
 
   return (
     <section
       id="journey"
       ref={containerRef}
-      style={{ height: '300vh', position: 'relative' }}
+      style={{ height: '500vh', position: 'relative' }} /* Increased height to give layers room to breathe smoothly */
       aria-label="Cinematic scroll journey"
     >
       {/* ── Sticky stage ──────────────────── */}
-      <div className="journey-stage flex items-center justify-center bg-black">
+      <div className="journey-stage flex items-center justify-center bg-[#0d0d0d]">
 
         {/* Dark vignette edges */}
         <div
           className="absolute inset-0 pointer-events-none z-10"
           style={{
             background:
-              'radial-gradient(ellipse 80% 80% at 50% 50%, transparent 40%, rgba(0,0,0,0.8) 100%)',
+              'radial-gradient(ellipse 80% 80% at 50% 50%, transparent 40%, rgba(0,0,0,0.4) 100%)',
           }}
         />
 
@@ -140,20 +117,6 @@ const ScrollJourney = () => {
             scrollProgress={scrollYProgress}
           />
         ))}
-
-        {/* ── Mid-screen copy ──────────────── */}
-        <motion.div
-          style={{ opacity: midOpacity, y: midY }}
-          className="absolute z-20 text-center pointer-events-none"
-        >
-          <p className="text-amber-400/70 text-sm tracking-[0.35em] uppercase mb-3 font-poppins">
-            Through the lens
-          </p>
-          <h2 className="font-playfair text-5xl md:text-7xl font-bold text-white/80 leading-tight">
-            Every Frame<br />
-            <span className="text-amber-400">Tells a Story</span>
-          </h2>
-        </motion.div>
 
         {/* ── End-section teaser ───────────── */}
         <motion.div
@@ -280,55 +243,60 @@ function LensElement({ size = 400, color = '#f59e0b', opacity = 0.5 }) {
   )
 }
 
-/* ── Prism ───────────────────────────────── */
-function PrismElement() {
+/* ── Aperture Opening Animation ────────────── */
+function ApertureElement() {
   return (
-    <div className="relative" style={{ width: 220, height: 220 }}>
-      <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-        {/* Prism triangle */}
-        <polygon
-          points="100,20 180,170 20,170"
-          stroke="#f59e0b"
-          strokeWidth="2"
-          fill="rgba(245,158,11,0.04)"
-          strokeOpacity="0.6"
-        />
-        {/* Inner glow */}
-        <polygon
-          points="100,40 165,160 35,160"
-          stroke="#f59e0b"
-          strokeWidth="1"
-          fill="none"
-          strokeOpacity="0.25"
-        />
-        {/* Rainbow dispersion rays */}
-        {[
-          { x1: 180, y1: 170, x2: 230, y2: 130, color: '#ef4444' },
-          { x1: 180, y1: 170, x2: 235, y2: 145, color: '#f97316' },
-          { x1: 180, y1: 170, x2: 238, y2: 162, color: '#eab308' },
-          { x1: 180, y1: 170, x2: 235, y2: 180, color: '#22c55e' },
-          { x1: 180, y1: 170, x2: 228, y2: 196, color: '#3b82f6' },
-          { x1: 180, y1: 170, x2: 218, y2: 210, color: '#8b5cf6' },
-        ].map((ray, i) => (
-          <line
+    <div className="relative flex items-center justify-center pointer-events-none" style={{ width: 280, height: 280 }}>
+      <div className="absolute inset-0 rounded-full border-[2px] border-amber-500/20" style={{ boxShadow: '0 0 40px rgba(245,158,11,0.1)' }} />
+      
+      <motion.div
+        animate={{ rotate: 180 }}
+        transition={{ duration: 16, repeat: Infinity, ease: 'linear' }}
+        className="absolute inset-[6px] rounded-full overflow-hidden flex items-center justify-center"
+      >
+        {Array.from({ length: 8 }).map((_, i) => (
+          <motion.div
             key={i}
-            x1={ray.x1} y1={ray.y1} x2={ray.x2} y2={ray.y2}
-            stroke={ray.color}
-            strokeWidth="2"
-            strokeOpacity="0.7"
+            className="absolute origin-bottom-left"
+            style={{
+              width: '120%', height: '100%',
+              background: 'linear-gradient(to right, rgba(15,15,15,0.95), rgba(25,25,25,0.95))',
+              borderLeft: '1px solid rgba(245,158,11,0.4)',
+              transformOrigin: '0% 100%',
+              left: '50%', top: '-50%',
+              rotate: i * 45,
+            }}
+            animate={{ skewX: [35, 10, 35] }}
+            transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
           />
         ))}
-        {/* Light entry ray */}
-        <line x1="10" y1="80" x2="100" y2="95"
-          stroke="white" strokeWidth="1.5" strokeOpacity="0.5" strokeDasharray="4 3" />
-        {/* Corner glint */}
-        <circle cx="100" cy="20" r="3" fill="#f59e0b" fillOpacity="0.8" />
-        <circle cx="20"  cy="170" r="2" fill="#f59e0b" fillOpacity="0.5" />
-        <circle cx="180" cy="170" r="2" fill="#f59e0b" fillOpacity="0.5" />
-      </svg>
-      <p className="absolute bottom-0 left-1/2 -translate-x-1/2 font-playfair italic text-amber-500/40 text-xs whitespace-nowrap">
-        Light Dispersion
+      </motion.div>
+
+      <motion.div
+        className="absolute rounded-full"
+        style={{ background: 'radial-gradient(circle, rgba(245,158,11,0.15) 0%, transparent 60%)' }}
+        animate={{ width: [30, 200, 30], height: [30, 200, 30] }}
+        transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
+      />
+      
+      <p className="absolute -bottom-10 left-1/2 -translate-x-1/2 font-poppins tracking-[0.3em] text-amber-500/50 text-[9px] uppercase whitespace-nowrap">
+        Aperture Opening
       </p>
+    </div>
+  )
+}
+
+/* ── Mid Copy ─────────────────────────────── */
+function MidCopy() {
+  return (
+    <div className="text-center px-4" style={{ width: 600 }}>
+      <p className="text-amber-400/70 text-sm tracking-[0.35em] uppercase mb-3 font-poppins">
+        Through the lens
+      </p>
+      <h2 className="font-playfair text-5xl md:text-7xl font-bold text-white/80 leading-tight drop-shadow-2xl">
+        Every Frame<br />
+        <span className="text-amber-400">Tells a Story</span>
+      </h2>
     </div>
   )
 }

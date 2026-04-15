@@ -1,7 +1,12 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import AlbumBook from './AlbumBook'
+import Reveal from './Reveal'
 
+/* ─────────────────────────────────────
+   Album data
+───────────────────────────────────── */
 const albums = [
   {
     id: 1,
@@ -17,7 +22,7 @@ const albums = [
       "https://images.unsplash.com/photo-1606216794074-735e91aa2c92?w=800&h=1000&fit=crop",
       "https://images.unsplash.com/photo-1591604466107-ec97de577aff?w=800&h=1000&fit=crop",
       "https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=800&h=1000&fit=crop",
-    ]
+    ],
   },
   {
     id: 2,
@@ -33,7 +38,7 @@ const albums = [
       "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=800&h=1000&fit=crop",
       "https://images.unsplash.com/photo-1552058544-f2b08422138a?w=800&h=1000&fit=crop",
       "https://images.unsplash.com/photo-1619895862022-09114b41f16f?w=800&h=1000&fit=crop",
-    ]
+    ],
   },
   {
     id: 3,
@@ -47,9 +52,7 @@ const albums = [
       "https://images.unsplash.com/photo-1433086966358-54859d0ed716?w=800&h=1000&fit=crop",
       "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=800&h=1000&fit=crop",
       "https://images.unsplash.com/photo-1501854140801-50d01698950b?w=800&h=1000&fit=crop",
-      "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&h=1000&fit=crop",
-      "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=800&h=1000&fit=crop",
-    ]
+    ],
   },
   {
     id: 4,
@@ -61,11 +64,9 @@ const albums = [
       "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=800&h=1000&fit=crop",
       "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&h=1000&fit=crop",
       "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&h=1000&fit=crop",
-      "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800&h=1000&fit=crop",
       "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=800&h=1000&fit=crop",
-      "https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?w=800&h=1000&fit=crop",
       "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=800&h=1000&fit=crop",
-    ]
+    ],
   },
   {
     id: 5,
@@ -78,73 +79,174 @@ const albums = [
       "https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=800&h=1000&fit=crop",
       "https://images.unsplash.com/photo-1485230895905-ec40ba36b9bc?w=800&h=1000&fit=crop",
       "https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=800&h=1000&fit=crop",
-      "https://images.unsplash.com/photo-1509631179647-0177331693ae?w=800&h=1000&fit=crop",
       "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&h=1000&fit=crop",
-      "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=800&h=1000&fit=crop",
-    ]
-  }
+    ],
+  },
 ]
 
+/* ─────────────────────────────────────────────────────────────────
+   ViewCursor — simplified, smoother cursor for album hovering
+───────────────────────────────────────────────────────────────── */
+function ViewCursor({ isHovering }) {
+  const innerRef = useRef(null)
+  const mouseRef = useRef({ x: -1000, y: -1000 })
+  const innerPos = useRef({ x: -1000, y: -1000 })
+
+  useEffect(() => {
+    const onMove = (e) => {
+      mouseRef.current = { x: e.clientX, y: e.clientY }
+    }
+    window.addEventListener('mousemove', onMove)
+
+    let raf
+    const tick = () => {
+      const mx = mouseRef.current.x
+      const my = mouseRef.current.y
+
+      // Very smooth, crisp lerp tracking
+      innerPos.current.x += (mx - innerPos.current.x) * 0.28
+      innerPos.current.y += (my - innerPos.current.y) * 0.28
+
+      if (innerRef.current) {
+        innerRef.current.style.transform =
+          `translate(${innerPos.current.x}px, ${innerPos.current.y}px) translate(-50%, -50%)`
+      }
+
+      raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+
+    return () => {
+      window.removeEventListener('mousemove', onMove)
+      cancelAnimationFrame(raf)
+    }
+  }, [])
+
+  const cursor = (
+    <div
+      ref={innerRef}
+      style={{
+        position: 'fixed',
+        top: 0, left: 0,
+        pointerEvents: 'none',
+        zIndex: 999999,
+        opacity: isHovering ? 1 : 0,
+        transition: 'opacity 0.2s ease',
+      }}
+    >
+      {/* Sleek neon glassmorphic 'VIEW' button */}
+      <div 
+         style={{ 
+           width: 76, height: 76, 
+           borderRadius: '50%', 
+           background: 'rgba(10, 10, 10, 0.35)', 
+           backdropFilter: 'blur(8px)',
+           border: '1px solid rgba(245,158,11,0.7)',
+           display: 'flex', alignItems: 'center', justifyContent: 'center',
+           boxShadow: '0 0 20px rgba(245,158,11,0.3), inset 0 0 12px rgba(245,158,11,0.2)',
+           color: '#f59e0b', 
+           fontFamily: 'Poppins, sans-serif', 
+           fontWeight: 600, 
+           fontSize: '11px',
+           letterSpacing: '0.15em',
+           textShadow: '0 0 8px rgba(245,158,11,0.8)',
+           transition: 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
+           transform: `scale(${isHovering ? 1 : 0.4})`
+         }}
+      >
+        <span style={{ marginLeft: '1px' }}>VIEW</span>
+      </div>
+    </div>
+  )
+
+  return typeof document !== 'undefined' ? createPortal(cursor, document.body) : null
+}
+
+/* ─────────────────────────────────────
+   AlbumCollection Section
+───────────────────────────────────── */
 const AlbumCollection = () => {
   const [selectedAlbum, setSelectedAlbum] = useState(null)
+  const [isHovering, setIsHovering] = useState(false)
 
   return (
-    <section id="albums" className="py-20 bg-gradient-to-b from-black to-gray-900">
-      <div className="container-custom">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          viewport={{ once: true }}
-          className="text-center mb-12"
-        >
-          <span className="text-amber-500 font-semibold tracking-wider uppercase text-sm">Our Work</span>
-          <h2 className="text-4xl md:text-5xl font-playfair font-bold mt-2 mb-4">
-            Featured <span className="text-amber-500">Albums</span>
-          </h2>
-          <p className="text-gray-400 max-w-2xl mx-auto">
-            Explore our curated collection of moments frozen in time, each telling a unique story through our lens.
-          </p>
-        </motion.div>
+    <>
+      {/* Keyframes for lens ring rotation — injected once */}
+      <style>{`
+        @keyframes lens-spin-cw  { from { transform: rotate(0deg);    } to { transform: rotate(360deg);  } }
+        @keyframes lens-spin-ccw { from { transform: rotate(0deg);    } to { transform: rotate(-360deg); } }
+      `}</style>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {albums.map((album, index) => (
-            <motion.div
-              key={album.id}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: index * 0.1 }}
-              viewport={{ once: true }}
-              className="group cursor-pointer"
-              onClick={() => setSelectedAlbum(album)}
-            >
-              <div className="relative overflow-hidden rounded-lg shadow-2xl">
-                <img
-                  src={album.coverImage}
-                  alt={album.title}
-                  className="w-full h-80 object-cover transform group-hover:scale-110 transition-transform duration-500"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <div className="absolute bottom-0 left-0 right-0 p-6">
-                    <h3 className="text-2xl font-playfair font-bold text-white mb-2">{album.title}</h3>
-                    <p className="text-gray-300 text-sm">{album.description}</p>
-                    <button className="mt-4 text-amber-500 font-semibold flex items-center gap-2 group/btn">
-                      View Album
-                      <span className="group-hover/btn:translate-x-1 transition-transform">→</span>
-                    </button>
+      <ViewCursor isHovering={isHovering} />
+
+      <section
+        id="albums"
+        className="py-24 bg-gradient-to-b from-black to-gray-900"
+        style={{ cursor: isHovering ? 'none' : 'auto' }}
+        onMouseEnter={() => setIsHovering(true)}
+        onMouseLeave={() => setIsHovering(false)}
+      >
+        <div className="container-custom">
+          <Reveal dir="up">
+            <div className="text-center mb-16">
+              <span className="text-amber-500 font-semibold tracking-[0.3em] uppercase text-xs font-poppins">Our Work</span>
+              <h2 className="text-4xl md:text-6xl font-playfair font-bold mt-3 mb-4">
+                Featured <span className="text-amber-500">Albums</span>
+              </h2>
+              <p className="text-gray-400 max-w-2xl mx-auto font-poppins">
+                Explore our curated collection of moments frozen in time, each telling a unique story through our lens.
+              </p>
+            </div>
+          </Reveal>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {albums.map((album, index) => (
+              <Reveal key={album.id} delay={index * 0.07} random>
+                <motion.div
+                  className="group cursor-none"
+                  onClick={() => setSelectedAlbum(album)}
+                  whileHover={{ y: -10 }}
+                  transition={{ type: 'spring', stiffness: 280, damping: 20 }}
+                >
+                  <div className="relative overflow-hidden rounded-2xl shadow-2xl">
+                    <img
+                      src={album.coverImage}
+                      alt={album.title}
+                      className="w-full h-80 object-cover transform group-hover:scale-105 transition-transform duration-700 ease-out"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-60 group-hover:opacity-95 transition-opacity duration-500" />
+
+                    {/* Content reveals on hover */}
+                    <div className="absolute bottom-0 left-0 right-0 p-6 translate-y-4 group-hover:translate-y-0 transition-transform duration-500 ease-out">
+                      <h3 className="text-2xl font-playfair font-bold text-white mb-1">{album.title}</h3>
+                      <p className="text-gray-300/80 text-sm mb-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-75 font-poppins">{album.description}</p>
+                      <span className="inline-flex items-center gap-2 text-amber-400 font-poppins font-semibold text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-100">
+                        View Album
+                        <motion.span animate={{ x: [0, 5, 0] }} transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut' }}>→</motion.span>
+                      </span>
+                    </div>
+
+                    {/* Amber top accent bar */}
+                    <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left" />
+
+                    {/* Corner index */}
+                    <div className="absolute top-4 right-4 text-white/25 font-mono text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      {String(index + 1).padStart(2, '0')}
+                    </div>
                   </div>
-                </div>
-              </div>
-            </motion.div>
-          ))}
+                </motion.div>
+              </Reveal>
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* Album Book Modal */}
-      {selectedAlbum && (
-        <AlbumBook album={selectedAlbum} onClose={() => setSelectedAlbum(null)} />
-      )}
-    </section>
+        <AnimatePresence>
+          {selectedAlbum && (
+            <AlbumBook album={selectedAlbum} onClose={() => setSelectedAlbum(null)} />
+          )}
+        </AnimatePresence>
+      </section>
+    </>
   )
 }
 

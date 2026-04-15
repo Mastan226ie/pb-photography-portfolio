@@ -83,37 +83,39 @@ const Hero = () => {
         <div className="max-w-3xl">
           {/* Tag line */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.1 }}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
             className="flex items-center gap-3 mb-5"
           >
             <div className="h-px w-12 bg-amber-400" />
             <span className="text-amber-400 font-poppins font-semibold tracking-[0.3em] uppercase text-xs">
-              Premium Photography
+              PB Photography
             </span>
           </motion.div>
 
-          <motion.h1
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-            className="text-5xl md:text-7xl xl:text-8xl font-playfair font-bold leading-[1.08] mb-7"
-          >
-            Capturing Moments,
-            <br />Creating{' '}
-            <span
-              className="text-amber-400 italic"
-              style={{ textShadow: '0 0 60px rgba(245,158,11,0.25)' }}
+          <div className="overflow-hidden">
+            <motion.h1
+              initial={{ opacity: 0, y: 100 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1.1, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+              className="text-5xl md:text-7xl xl:text-8xl font-playfair font-bold leading-[1.08] mb-7"
             >
-              Memories
-            </span>
-          </motion.h1>
+              Capturing Moments,
+              <br />Creating{' '}
+              <span
+                className="text-amber-400 italic"
+                style={{ textShadow: '0 0 60px rgba(245,158,11,0.25)' }}
+              >
+                Memories
+              </span>
+            </motion.h1>
+          </div>
 
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.35 }}
+            transition={{ duration: 0.8, delay: 0.45, ease: [0.22, 1, 0.36, 1] }}
             className="text-gray-300/80 text-lg md:text-xl mb-10 max-w-xl font-poppins leading-relaxed font-light"
           >
             Professional photography that tells your unique story. Weddings,
@@ -123,7 +125,7 @@ const Hero = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.45 }}
+            transition={{ duration: 0.8, delay: 0.55, ease: [0.22, 1, 0.36, 1] }}
             className="flex flex-col sm:flex-row gap-4 mb-14"
           >
             <a
@@ -131,7 +133,7 @@ const Hero = () => {
               className="btn-primary inline-flex items-center justify-center gap-2 group"
             >
               Book a Session
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1" style={{ transition: 'transform 0.25s ease' }} />
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1" style={{ transition: 'transform 0.4s cubic-bezier(0.22, 1, 0.36, 1)' }} />
             </a>
             <a href="#albums" className="btn-secondary inline-flex items-center justify-center">
               View Portfolio

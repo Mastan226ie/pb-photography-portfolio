@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Star, ChevronLeft, ChevronRight, Quote } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import Reveal from './Reveal'
 
 const testimonials = [
   {
@@ -60,57 +61,55 @@ const Testimonials = () => {
       </div>
 
       <div className="container-custom relative z-10">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          viewport={{ once: true }}
-          className="text-center mb-12"
-        >
-          <span className="text-amber-500 font-semibold tracking-wider uppercase text-sm">Client Love</span>
-          <h2 className="text-4xl md:text-5xl font-playfair font-bold mt-2 mb-4">
-            What Our <span className="text-amber-500">Clients Say</span>
-          </h2>
-          <p className="text-gray-400 max-w-2xl mx-auto">
-            Don't just take our word for it - hear from the amazing people we've had the pleasure of working with.
-          </p>
-        </motion.div>
+        <Reveal dir="up">
+          <div className="text-center mb-12">
+            <span className="text-amber-500 font-semibold tracking-wider uppercase text-sm">Client Love</span>
+            <h2 className="text-4xl md:text-5xl font-playfair font-bold mt-2 mb-4">
+              What Our <span className="text-amber-500">Clients Say</span>
+            </h2>
+            <p className="text-gray-400 max-w-2xl mx-auto">
+              Don't just take our word for it - hear from the amazing people we've had the pleasure of working with.
+            </p>
+          </div>
+        </Reveal>
 
         <div className="max-w-4xl mx-auto">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentIndex}
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -50 }}
-              transition={{ duration: 0.5 }}
-              className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-8 md:p-12 shadow-2xl"
-            >
-              <Quote className="w-12 h-12 text-amber-500 mb-6 opacity-50" />
-              <p className="text-xl md:text-2xl text-gray-200 mb-6 leading-relaxed">
-                "{testimonials[currentIndex].content}"
-              </p>
-              <div className="flex items-center justify-between flex-wrap gap-4">
-                <div className="flex items-center gap-4">
-                  <img
-                    src={testimonials[currentIndex].image}
-                    alt={testimonials[currentIndex].name}
-                    className="w-16 h-16 rounded-full object-cover border-2 border-amber-500"
-                  />
-                  <div>
-                    <h4 className="text-xl font-semibold text-white">{testimonials[currentIndex].name}</h4>
-                    <p className="text-gray-400">{testimonials[currentIndex].role}</p>
-                    <div className="flex gap-1 mt-1">
-                      {[...Array(testimonials[currentIndex].rating)].map((_, i) => (
-                        <Star key={i} className="w-4 h-4 fill-amber-500 text-amber-500" />
-                      ))}
+          <Reveal delay={0.2} random>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentIndex}
+                initial={{ opacity: 0, x: 50 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -50 }}
+                transition={{ duration: 0.5 }}
+                className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-8 md:p-12 shadow-2xl"
+              >
+                <Quote className="w-12 h-12 text-amber-500 mb-6 opacity-50" />
+                <p className="text-xl md:text-2xl text-gray-200 mb-6 leading-relaxed">
+                  "{testimonials[currentIndex].content}"
+                </p>
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                  <div className="flex items-center gap-4">
+                    <img
+                      src={testimonials[currentIndex].image}
+                      alt={testimonials[currentIndex].name}
+                      className="w-16 h-16 rounded-full object-cover border-2 border-amber-500"
+                    />
+                    <div>
+                      <h4 className="text-xl font-semibold text-white">{testimonials[currentIndex].name}</h4>
+                      <p className="text-gray-400">{testimonials[currentIndex].role}</p>
+                      <div className="flex gap-1 mt-1">
+                        {[...Array(testimonials[currentIndex].rating)].map((_, i) => (
+                          <Star key={i} className="w-4 h-4 fill-amber-500 text-amber-500" />
+                        ))}
+                      </div>
                     </div>
                   </div>
+                  <div className="text-gray-500 text-sm">{testimonials[currentIndex].date}</div>
                 </div>
-                <div className="text-gray-500 text-sm">{testimonials[currentIndex].date}</div>
-              </div>
-            </motion.div>
-          </AnimatePresence>
+              </motion.div>
+            </AnimatePresence>
+          </Reveal>
 
           {/* Navigation Buttons */}
           <div className="flex justify-center gap-4 mt-8">
@@ -146,17 +145,12 @@ const Testimonials = () => {
             { number: "50+", label: "Events Covered" },
             { number: "100%", label: "Satisfaction" },
           ].map((stat, idx) => (
-            <motion.div
-              key={idx}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: idx * 0.1 }}
-              viewport={{ once: true }}
-              className="text-center"
-            >
-              <h3 className="text-3xl md:text-4xl font-bold text-amber-500">{stat.number}</h3>
-              <p className="text-gray-400 mt-2">{stat.label}</p>
-            </motion.div>
+            <Reveal key={idx} delay={idx * 0.1}>
+              <div className="text-center">
+                <h3 className="text-3xl md:text-4xl font-bold text-amber-500">{stat.number}</h3>
+                <p className="text-gray-400 mt-2">{stat.label}</p>
+              </div>
+            </Reveal>
           ))}
         </div>
       </div>

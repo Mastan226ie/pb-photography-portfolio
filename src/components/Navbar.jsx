@@ -95,14 +95,12 @@ const Navbar = () => {
               <a
                 key={link.name}
                 href={link.href}
-                className="relative text-white/70 hover:text-amber-400 text-sm font-poppins font-medium group"
+                className="relative text-white/70 hover:text-amber-400 text-sm font-poppins font-medium group transition-all duration-300 hover:wavy-underline"
+                style={{ textDecorationColor: 'transparent' }}
+                onMouseEnter={(e) => e.currentTarget.style.textDecorationColor = '#f59e0b'}
+                onMouseLeave={(e) => e.currentTarget.style.textDecorationColor = 'transparent'}
               >
                 {link.name}
-                {/* Underline hover */}
-                <span
-                  className="absolute -bottom-0.5 left-0 right-0 h-px bg-amber-400 origin-left group-hover:scale-x-100 scale-x-0"
-                  style={{ transition: 'transform 0.25s ease' }}
-                />
               </a>
             ))}
 
