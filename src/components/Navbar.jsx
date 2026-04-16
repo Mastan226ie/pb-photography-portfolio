@@ -1,14 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { motion, useScroll, useSpring } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { Camera, Menu, X } from 'lucide-react'
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
-
-  /* ── Scroll progress bar ────────────── */
-  const { scrollYProgress } = useScroll()
-  const scaleX = useSpring(scrollYProgress, { stiffness: 200, damping: 30 })
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60)
@@ -28,22 +24,6 @@ const Navbar = () => {
 
   return (
     <>
-      {/* ── Scroll Progress Bar ──────────── */}
-      <motion.div
-        style={{
-          scaleX,
-          transformOrigin: '0%',
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          height: 2,
-          background: 'linear-gradient(to right, #f59e0b, #d97706)',
-          zIndex: 60,
-        }}
-        aria-hidden="true"
-      />
-
       {/* ── Navbar ───────────────────────── */}
       <motion.nav
         initial={{ y: -80, opacity: 0 }}
