@@ -13,10 +13,15 @@ import {
   X,
   Star
 } from 'lucide-react';
-import api from '../../api/axios';
+import api, { BASE_URL } from '../../api/axios';
 import toast from 'react-hot-toast';
 
 const AlbumDetail = () => {
+    // Utility to get the correct Image URL
+    const getImgUrl = (path) => {
+        if (!path) return '';
+        return path.startsWith('http') ? path : `${BASE_URL}${path}`;
+    };
   const { id } = useParams();
   const navigate = useNavigate();
   const [album, setAlbum] = useState(null);
@@ -75,6 +80,49 @@ const AlbumDetail = () => {
     }
   };
 
+  const handleCoverUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('image', file);
+    
+    toast.loading('Uploading cover photo...', { id: 'cover-upload' });
+    try {
+      const { data } = await api.post(`/upload`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setForm({...form, coverImage: data.url});
+      toast.success('Cover photo uploaded!', { id: 'cover-upload' });
+    } catch (error) {
+      toast.error('Upload failed.', { id: 'cover-upload' });
+    }
+  };
+
+  const handleDirectCoverUpdate = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('image', file);
+    
+    toast.loading('Updating cover photo...', { id: 'cover-upload-direct' });
+    try {
+      // Upload
+      const { data } = await api.post(`/upload`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      
+      // Save directly
+      await api.put(`/albums/${id}`, { ...album, coverImage: data.url });
+      
+      toast.success('Cover photo updated successfully!', { id: 'cover-upload-direct' });
+      fetchAlbum();
+    } catch (error) {
+      toast.error('Failed to update cover photo.', { id: 'cover-upload-direct' });
+    }
+  };
+
   const handleDeletePhoto = async (photoUrl) => {
     // Current logic: remove from list and update album. 
     // In a full system, you'd delete the actual file from server.
@@ -114,10 +162,21 @@ const AlbumDetail = () => {
             >
                 {editing ? <><X className="w-4 h-4" /> Cancel</> : <><Save className="w-4 h-4" /> Edit Details</>}
             </button>
-            <label className="cursor-pointer bg-amber-500 hover:bg-amber-400 text-black px-6 py-3 rounded-xl font-bold uppercase tracking-widest text-sm flex items-center gap-3 transition-all shadow-xl shadow-amber-500/20">
+            <label 
+                className={`flex items-center gap-3 px-6 py-3 rounded-xl font-bold uppercase tracking-widest text-sm transition-all shadow-xl ${
+                    album.photos?.length >= 10 
+                    ? 'bg-gray-800 text-gray-500 cursor-not-allowed border border-white/5' 
+                    : 'bg-amber-500 hover:bg-amber-400 text-black cursor-pointer shadow-amber-500/20'
+                }`}
+            >
                 {uploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
-                {uploading ? 'Processing...' : 'Upload Photo'}
-                <input type="file" className="hidden" onChange={handleUpload} disabled={uploading} />
+                {uploading ? 'Processing...' : album.photos?.length >= 10 ? 'Max Reached' : 'Upload Photo'}
+                <input 
+                    type="file" 
+                    className="hidden" 
+                    onChange={handleUpload} 
+                    disabled={uploading || album.photos?.length >= 10} 
+                />
             </label>
         </div>
       </div>
@@ -145,13 +204,25 @@ const AlbumDetail = () => {
                              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-amber-500 outline-none transition-colors h-32 resize-none"
                            />
                         </div>
-                        <div className="space-y-2">
-                           <label className="text-[10px] uppercase tracking-widest text-gray-500 font-bold ml-1">Cover Image URL</label>
-                           <input 
-                             value={form.coverImage} 
-                             onChange={e => setForm({...form, coverImage: e.target.value})}
-                             className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-amber-500 outline-none transition-colors"
-                           />
+                        <div className="space-y-3">
+                           <label className="text-[10px] uppercase tracking-widest text-gray-500 font-bold ml-1">Cover Image</label>
+                           <div className="flex items-center gap-3">
+                             <input 
+                               value={form.coverImage} 
+                               onChange={e => setForm({...form, coverImage: e.target.value})}
+                               className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-amber-500 outline-none transition-colors"
+                               placeholder="Image URL"
+                             />
+                             <label className="bg-white/10 hover:bg-white/20 text-white px-4 py-3 rounded-xl cursor-pointer transition-colors text-sm font-bold flex items-center justify-center shrink-0">
+                               <Upload className="w-4 h-4 mr-2" /> Upload
+                               <input type="file" className="hidden" onChange={handleCoverUpload} accept="image/*" />
+                             </label>
+                           </div>
+                           {form.coverImage && (
+                             <div className="mt-4 relative rounded-xl overflow-hidden aspect-[4/5] border border-white/10 w-32 h-40">
+                                <img src={getImgUrl(form.coverImage)} className="w-full h-full object-cover" alt="Cover Preview" />
+                             </div>
+                           )}
                         </div>
                         <button type="submit" className="w-full bg-amber-500 text-black py-4 rounded-xl font-bold uppercase tracking-widest text-xs shadow-lg shadow-amber-500/10">
                             Save Changes
@@ -159,11 +230,19 @@ const AlbumDetail = () => {
                     </form>
                 ) : (
                     <div className="space-y-6">
-                        <div className="relative rounded-xl overflow-hidden aspect-[4/5] border border-white/10">
-                            <img src={album.coverImage} className="w-full h-full object-cover" alt="Cover" />
-                            <div className="absolute top-4 left-4 bg-amber-500 text-black px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5">
+                        <div className="relative rounded-xl overflow-hidden aspect-[4/5] border border-white/10 group bg-black">
+                            <img src={getImgUrl(album.coverImage)} className="w-full h-full object-cover opacity-90 group-hover:opacity-40 transition-opacity duration-300" alt="Cover" />
+                            <div className="absolute top-4 left-4 bg-amber-500 text-black px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 z-10 transition-opacity group-hover:opacity-0">
                                 <Star className="w-2.5 h-2.5 fill-black" /> Cover Photo
                             </div>
+                            
+                            <label className="absolute inset-0 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 cursor-pointer">
+                              <div className="w-12 h-12 bg-amber-500 text-black rounded-full flex items-center justify-center mb-3 shadow-[0_0_30px_rgba(245,158,11,0.3)] transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                                <Upload className="w-5 h-5" />
+                              </div>
+                              <span className="text-white text-[10px] font-bold uppercase tracking-[0.2em] transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">Update Cover</span>
+                              <input type="file" className="hidden" onChange={handleDirectCoverUpdate} accept="image/*" />
+                            </label>
                         </div>
                         <div>
                             <p className="text-[10px] uppercase tracking-[0.2em] text-amber-500 font-bold mb-3">Narrative</p>
@@ -171,7 +250,9 @@ const AlbumDetail = () => {
                         </div>
                         <div className="pt-6 border-t border-white/5 flex items-center justify-between">
                             <span className="text-[10px] uppercase tracking-widest text-gray-600 font-bold">In Collection</span>
-                            <span className="text-white font-mono text-xs">{album.photos?.length || 0} Files</span>
+                            <span className={`font-mono text-xs ${album.photos?.length >= 10 ? 'text-amber-500 font-bold' : 'text-white'}`}>
+                                {album.photos?.length || 0} / 10 Files
+                            </span>
                         </div>
                     </div>
                 )}
@@ -207,7 +288,7 @@ const AlbumDetail = () => {
                                 transition={{ delay: index * 0.03 }}
                                 className="group relative aspect-[3/4] rounded-2xl overflow-hidden border border-white/5 bg-white/[0.02] hover:border-amber-500/30 transition-all duration-500"
                             >
-                                <img src={photo} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt={`Album ${index}`} />
+                                <img src={getImgUrl(photo)} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt={`Album ${index}`} />
                                 <div className="absolute inset-x-0 bottom-0 top-1/2 bg-gradient-to-t from-black to-transparent opacity-0 group-hover:opacity-80 transition-opacity duration-500" />
                                 
                                 <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-[-10px] group-hover:translate-y-0">
@@ -227,11 +308,13 @@ const AlbumDetail = () => {
                     </AnimatePresence>
 
                     {/* Upload Placeholder Tile */}
-                    <label className="cursor-pointer aspect-[3/4] rounded-2xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-3 text-gray-500 hover:text-amber-500 hover:border-amber-500 hover:bg-amber-500/5 transition-all">
-                        <Plus className="w-8 h-8" />
-                        <span className="text-[10px] uppercase tracking-widest font-bold">Add Photo</span>
-                        <input type="file" className="hidden" onChange={handleUpload} disabled={uploading} />
-                    </label>
+                    {album.photos?.length < 10 && (
+                        <label className="cursor-pointer aspect-[3/4] rounded-2xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-3 text-gray-500 hover:text-amber-500 hover:border-amber-500 hover:bg-amber-500/5 transition-all">
+                            <Plus className="w-8 h-8" />
+                            <span className="text-[10px] uppercase tracking-widest font-bold">Add Photo</span>
+                            <input type="file" className="hidden" onChange={handleUpload} disabled={uploading} />
+                        </label>
+                    )}
                 </div>
             ) : (
                 <div className="py-24 glass-card rounded-3xl border border-dashed border-white/10 flex flex-col items-center justify-center text-center">

@@ -48,25 +48,16 @@ const Navbar = () => {
           {/* ── Logo ──────────────────────── */}
           <a
             href="#home"
-            className="flex items-center gap-3 group"
+            className="flex items-center group"
             aria-label="PB Photography — Home"
           >
-            {/* Camera icon */}
-            <motion.div
-              whileHover={{ rotate: 15, scale: 1.1 }}
+            <motion.img
+              whileHover={{ scale: 1.05 }}
               transition={{ type: 'spring', stiffness: 300 }}
-              className="w-9 h-9 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center"
-            >
-              <Camera className="w-5 h-5 text-amber-400" />
-            </motion.div>
-            <div className="flex flex-col leading-none">
-              <span className="font-playfair font-bold text-xl text-white">
-                PB<span className="text-amber-500">.</span>
-              </span>
-              <span className="text-[9px] tracking-[0.25em] text-white/40 uppercase font-poppins">
-                Photography
-              </span>
-            </div>
+              src="/pbphotography.png" 
+              alt="PB Photography"
+              className="h-10 md:h-12 w-auto object-contain"
+            />
           </a>
 
           {/* ── Desktop Links ─────────────── */}

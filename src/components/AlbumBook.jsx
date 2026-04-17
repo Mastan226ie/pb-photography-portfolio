@@ -2,6 +2,13 @@ import React, { useState, useRef, useEffect, useCallback } from 'react'
 import HTMLFlipBook from 'react-pageflip'
 import { X, ChevronLeft, ChevronRight, BookOpen, Camera } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { BASE_URL } from '../api/axios'
+
+// Helper to get image URL
+const getImgUrl = (path) => {
+  if (!path) return '';
+  return path.startsWith('http') ? path : `${BASE_URL}${path}`;
+};
 
 /* ══════════════════════════════════════════════
    CSS fix — injected once, prevents mirror/ghost
@@ -34,7 +41,7 @@ const CoverPage = React.forwardRef(({ album, isBack }, ref) => (
     }}
   >
     <img
-      src={album.coverImage}
+      src={getImgUrl(album.coverImage)}
       alt={album.title}
       draggable={false}
       style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
@@ -60,7 +67,7 @@ const CoverPage = React.forwardRef(({ album, isBack }, ref) => (
           transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
           style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(245,158,11,0.2)', border: '2px solid rgba(245,158,11,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24, boxShadow: '0 0 32px rgba(245,158,11,0.15)' }}
         >
-          <Camera style={{ width: 28, height: 28, color: '#f59e0b' }} />
+          <img src="/pbphotography.png" alt="Logo" style={{ width: 28, height: 28, objectFit: 'contain' }} />
         </motion.div>
         <h1 style={{ fontFamily: '"Playfair Display", serif', fontSize: 26, fontWeight: 700, textAlign: 'center', textShadow: '0 2px 20px rgba(0,0,0,0.9)', marginBottom: 12 }}>
           {album.title}
@@ -120,7 +127,7 @@ const PhotoPage = React.forwardRef(({ photos, pageIndex, side, albumTitle }, ref
       {/* Photo */}
       {photo ? (
         <img
-          src={photo}
+          src={getImgUrl(photo)}
           alt={`${albumTitle} — ${pageNum}`}
           draggable={false}
           style={{
@@ -131,8 +138,8 @@ const PhotoPage = React.forwardRef(({ photos, pageIndex, side, albumTitle }, ref
           }}
         />
       ) : (
-        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Camera style={{ width: 48, height: 48, color: '#333' }} />
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyItems: 'center' }}>
+          <img src="/pbphotography.png" alt="Logo" style={{ width: 48, height: 48, opacity: 0.3, display: 'block', margin: 'auto', objectFit: 'contain' }} />
         </div>
       )}
 

@@ -1,5 +1,5 @@
 import React, { useRef } from 'react'
-import { motion, useScroll, useTransform } from 'framer-motion'
+import { motion, useScroll, useTransform, useMotionValue, useSpring } from 'framer-motion'
 
 /**
  * ScrollJourney
@@ -15,32 +15,32 @@ import { motion, useScroll, useTransform } from 'framer-motion'
 const LAYERS = [
   {
     id: 'lens1',
-    focalAt: 0.15,
+    focalAt: 0.08,
     content: <LensElement size={480} color="#f59e0b" opacity={0.6} />,
   },
   {
     id: 'aperture',
-    focalAt: 0.29,
+    focalAt: 0.23,
     content: <ApertureElement />,
   },
   {
     id: 'midcopy',
-    focalAt: 0.43,
+    focalAt: 0.38,
     content: <MidCopy />,
   },
   {
     id: 'filmstrip',
-    focalAt: 0.57,
+    focalAt: 0.53,
     content: <FilmStrip />,
   },
   {
     id: 'photoframe',
-    focalAt: 0.71,
+    focalAt: 0.68,
     content: <FloatingFrame />,
   },
   {
     id: 'titlecard',
-    focalAt: 0.85,
+    focalAt: 0.83,
     content: <TitleCard />,
   },
 ]
@@ -85,7 +85,7 @@ const ScrollJourney = () => {
     <section
       id="journey"
       ref={containerRef}
-      style={{ height: '500vh', position: 'relative' }} /* Increased height to give layers room to breathe smoothly */
+      style={{ height: '280vh', position: 'relative' }} /* Reduced height for faster interaction and less scroll delay */
       aria-label="Cinematic scroll journey"
     >
       {/* ── Sticky stage ──────────────────── */}
@@ -177,68 +177,107 @@ const ScrollProgressPip = ({ progress }) => {
    LAYER CONTENT COMPONENTS
    ════════════════════════════════════════════ */
 
-/* ── Giant Glass Lens ────────────────────── */
-function LensElement({ size = 400, color = '#f59e0b', opacity = 0.5 }) {
+/* ── True 3D Cylindrical 85mm Lens ────────────────────── */
+function LensElement({ size = 480 }) {
+  const x = useMotionValue(0.5);
+  const y = useMotionValue(0.5);
+
+  // Exaggerated rotation to show off the deep 3D geometry
+  const rotateX = useTransform(useSpring(y, { stiffness: 100, damping: 30 }), [0, 1], [35, -35]);
+  const rotateY = useTransform(useSpring(x, { stiffness: 100, damping: 30 }), [0, 1], [-35, 35]);
+
+  const handleMouseMove = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    x.set((e.clientX - rect.left) / rect.width);
+    y.set((e.clientY - rect.top) / rect.height);
+  };
+
+  const handleMouseLeave = () => {
+    x.set(0.5);
+    y.set(0.5);
+  };
+
+  // Cylinder Rings for 3D depth
+  const RINGS = 12;
+
   return (
-    <div style={{ width: size, height: size }} className="relative flex items-center justify-center">
-      {/* Outer glow */}
-      <div
-        className="absolute inset-0 rounded-full"
+    <div 
+      style={{ width: size, height: size, perspective: 1500 }} 
+      className="relative flex items-center justify-center pointer-events-auto group"
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+    >
+      <motion.div
         style={{
-          background: `radial-gradient(circle, ${color}08 0%, transparent 70%)`,
-          filter: 'blur(30px)',
+          width: '100%',
+          height: '100%',
+          rotateX,
+          rotateY,
+          transformStyle: 'preserve-3d'
         }}
-      />
-      {/* Concentric rings */}
-      {[1, 0.78, 0.57, 0.38].map((scale, i) => (
-        <div
-          key={i}
-          className="absolute rounded-full"
-          style={{
-            width: `${scale * 100}%`,
-            height: `${scale * 100}%`,
-            border: `${2 - i * 0.3}px solid ${color}`,
-            opacity: opacity - i * 0.1,
-            boxShadow: i === 0
-              ? `0 0 40px ${color}20, inset 0 0 40px ${color}10`
-              : 'none',
-          }}
-        />
-      ))}
-      {/* Glass tint */}
-      <div
-        className="absolute rounded-full"
-        style={{
-          width: '36%',
-          height: '36%',
-          background: `radial-gradient(circle at 35% 35%, ${color}18, transparent 70%)`,
-          border: `1px solid ${color}30`,
-        }}
-      />
-      {/* Aperture blades */}
-      {Array.from({ length: 8 }, (_, i) => {
-        const angle = (i / 8) * 360
-        return (
-          <div
-            key={i}
-            className="absolute"
-            style={{
-              width: '40%',
-              height: '1px',
-              background: `linear-gradient(to right, transparent, ${color}40, transparent)`,
-              transformOrigin: '50% 50%',
-              transform: `rotate(${angle}deg)`,
-            }}
-          />
-        )
-      })}
-      {/* Lens label */}
-      <p
-        className="absolute bottom-6 font-poppins text-xs tracking-[0.3em] uppercase"
-        style={{ color: `${color}60` }}
+        className="relative flex items-center justify-center cursor-crosshair"
       >
-        50mm f/1.4
-      </p>
+        {/* Outer Casing Tunnel (The Barrel) */}
+        {Array.from({ length: RINGS }).map((_, i) => {
+           const z = i * -30; // Depth of barrel
+           const isFront = i === 0;
+           return (
+             <div 
+               key={`barrel-${i}`}
+               className="absolute inset-0 rounded-full border border-gray-800"
+               style={{ 
+                 background: isFront ? '#0a0a0a' : 'transparent',
+                 border: isFront ? '16px solid #141414' : '4px solid #1a1a1a', 
+                 boxShadow: isFront ? 'inset 0 0 50px rgba(0,0,0,1)' : 'none',
+                 transform: `translateZ(${z}px)`,
+                 transformStyle: 'preserve-3d'
+               }} 
+             >
+                {/* Side walls effect (faking solid cylinder walls) */}
+                {!isFront && i < RINGS - 1 && (
+                    <div className="absolute inset-0 rounded-full border-[10px] border-[#0a0a0a] opacity-80" />
+                )}
+             </div>
+           )
+        })}
+
+        {/* Front Glass Element */}
+        <motion.div 
+          className="absolute inset-[15px] rounded-full overflow-hidden shadow-[0_0_80px_rgba(245,158,11,0.15)]" 
+          style={{ 
+            background: 'radial-gradient(ellipse at 30% 30%, rgba(245,158,11,0.2) 0%, rgba(0,0,0,0.8) 70%)',
+            border: '2px solid rgba(255,255,255,0.05)',
+            transform: 'translateZ(-10px)' 
+          }}
+        >
+            {/* Dynamic Glass Reflections */}
+            <div className="absolute top-[-20%] left-[-20%] w-[140%] h-[140%] bg-gradient-to-br from-white/10 via-transparent to-transparent rotate-[35deg] mix-blend-screen opacity-50 shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-transform duration-700 group-hover:rotate-[65deg]" />
+            <div className="absolute top-[10%] left-[10%] w-[40%] h-[40%] bg-blue-400/5 rounded-full blur-[30px]" />
+            <div className="absolute bottom-[20%] right-[10%] w-[50%] h-[50%] bg-amber-500/10 rounded-full blur-[40px]" />
+        </motion.div>
+
+        {/* Inner Glass Element (Deep) */}
+        <div className="absolute inset-[30%] rounded-full border border-white/5 bg-gradient-to-tr from-transparent to-white/5" style={{ transform: 'translateZ(-150px)', boxShadow: '0 0 50px rgba(0,0,0,0.9)' }} />
+        <div className="absolute inset-[40%] rounded-full bg-black/90" style={{ transform: 'translateZ(-200px)' }} />
+
+        {/* Aperture inside the tunnel */}
+        <div className="absolute inset-[25%] flex items-center justify-center pointer-events-none" style={{ transform: 'translateZ(-250px)' }}>
+          {Array.from({ length: 8 }, (_, i) => {
+            const rot = i * 45;
+            return (
+              <div
+                key={i}
+                className="absolute w-[80%] h-px bg-gray-600/60"
+                style={{ transformOrigin: 'left center', transform: `rotate(${rot}deg) translateX(30px) skewY(35deg)` }}
+              />
+            )
+          })}
+        </div>
+
+      </motion.div>
+      
+      {/* Outer ambient glow */}
+      <div className="absolute inset-[-50px] rounded-full bg-amber-500/10 blur-[100px] -z-10 pointer-events-none" />
     </div>
   )
 }
@@ -247,7 +286,6 @@ function LensElement({ size = 400, color = '#f59e0b', opacity = 0.5 }) {
 function ApertureElement() {
   return (
     <div className="relative flex items-center justify-center pointer-events-none" style={{ width: 280, height: 280 }}>
-      <div className="absolute inset-0 rounded-full border-[2px] border-amber-500/20" style={{ boxShadow: '0 0 40px rgba(245,158,11,0.1)' }} />
       
       <motion.div
         animate={{ rotate: 180 }}
@@ -278,10 +316,6 @@ function ApertureElement() {
         animate={{ width: [30, 200, 30], height: [30, 200, 30] }}
         transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
       />
-      
-      <p className="absolute -bottom-10 left-1/2 -translate-x-1/2 font-poppins tracking-[0.3em] text-amber-500/50 text-[9px] uppercase whitespace-nowrap">
-        Aperture Opening
-      </p>
     </div>
   )
 }

@@ -2,8 +2,7 @@ import nodemailer from 'nodemailer';
 
 const sendEmail = async (options) => {
   const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: process.env.SMTP_PORT,
+    service: 'gmail',
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
@@ -11,7 +10,7 @@ const sendEmail = async (options) => {
   });
 
   const message = {
-    from: `${process.env.FROM_NAME || 'PB Photography Admin'} <${process.env.SMTP_USER}>`,
+    from: `"PB Photography" <${process.env.SMTP_USER}>`,
     to: options.email,
     subject: options.subject,
     text: options.message,
@@ -20,7 +19,9 @@ const sendEmail = async (options) => {
 
   const info = await transporter.sendMail(message);
 
-  console.log('Message sent: %s', info.messageId);
+  console.log('Email sent successfully:');
+  console.log(' - ID:', info.messageId);
+  console.log(' - Response:', info.response);
 };
 
 export default sendEmail;

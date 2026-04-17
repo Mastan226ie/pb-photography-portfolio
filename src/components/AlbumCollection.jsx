@@ -3,7 +3,13 @@ import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import AlbumBook from './AlbumBook'
 import Reveal from './Reveal'
-import api from '../api/axios'
+import api, { BASE_URL } from '../api/axios'
+
+// Helper to get image URL
+const getImgUrl = (path) => {
+  if (!path) return '';
+  return path.startsWith('http') ? path : `${BASE_URL}${path}`;
+};
 
 /* ─────────────────────────────────────────────────────────────────
    ViewCursor — Cinematic Autofocus Crosshair
@@ -164,7 +170,7 @@ const AlbumCollection = () => {
                   >
                     <div className="relative overflow-hidden rounded-2xl shadow-2xl">
                       <img
-                        src={album.coverImage}
+                        src={getImgUrl(album.coverImage)}
                         alt={album.title}
                         className="w-full h-80 object-cover transform group-hover:scale-105 transition-transform duration-700 ease-out"
                       />

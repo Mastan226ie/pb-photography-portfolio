@@ -84,9 +84,15 @@ router.delete('/:id', protect, async (req, res) => {
 // @route   POST /api/albums/:id/upload
 // @access  Private/Admin
 router.post('/:id/upload', protect, upload.single('image'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ message: 'No image file uploaded' });
+  }
   const album = await Album.findById(req.params.id);
 
   if (album) {
+    if (album.photos.length >= 10) {
+      return res.status(400).json({ message: 'Maximum of 10 photos allowed per album' });
+    }
     const imageUrl = `/uploads/${req.file.filename}`;
     album.photos.push(imageUrl);
     await album.save();

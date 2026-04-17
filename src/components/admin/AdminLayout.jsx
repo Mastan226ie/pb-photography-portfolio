@@ -72,7 +72,7 @@ const AdminLayout = ({ children }) => {
         <div className="p-6 flex items-center justify-between">
           <NavLink to="/" className="flex items-center gap-3 group">
             <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center transition-all duration-300 group-hover:bg-amber-500 group-hover:text-black">
-              <Camera className="w-5 h-5 text-amber-500 group-hover:text-inherit" />
+              <img src="/pbphotography.png" alt="PB Photography Logo" className="w-6 h-6 object-contain" />
             </div>
             {!isCollapsed && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="leading-none">
@@ -113,7 +113,7 @@ const AdminLayout = ({ children }) => {
       {/* ── Mobile Header ───────────────────────────── */}
       <div className="md:hidden fixed top-0 inset-x-0 h-16 bg-black/80 backdrop-blur-xl border-b border-white/5 px-4 flex items-center justify-between z-50">
         <div className="flex items-center gap-3">
-            <Camera className="w-6 h-6 text-amber-500" />
+            <img src="/pbphotography.png" alt="PB Photography Logo" className="w-6 h-6 object-contain" />
             <span className="font-playfair font-bold text-xl">PB Admin</span>
         </div>
         <button 
@@ -144,7 +144,7 @@ const AdminLayout = ({ children }) => {
             >
                 <div className="flex items-center justify-between mb-10">
                     <div className="flex items-center gap-3">
-                        <Camera className="w-6 h-6 text-amber-500" />
+                        <img src="/pbphotography.png" alt="PB Photography Logo" className="w-6 h-6 object-contain" />
                         <span className="font-playfair font-bold text-xl">PB Admin</span>
                     </div>
                     <button onClick={() => setIsMobileOpen(false)} className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center">

@@ -49,7 +49,7 @@ router.post('/forgot-password', async (req, res) => {
   // Create reset URL
   const resetUrl = `${process.env.CLIENT_URL}/admin/reset-password/${resetToken}`;
 
-  const message = `You are receiving this email because you (or someone else) has requested the reset of a password. Please make a PUT request to: \n\n ${resetUrl}`;
+  const message = `You are receiving this email because a password reset was requested for your account. Please click the link below to reset your password: \n\n ${resetUrl}`;
 
   try {
     await sendEmail({

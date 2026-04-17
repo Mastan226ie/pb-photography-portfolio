@@ -2,7 +2,13 @@ import React, { useState, useEffect } from 'react'
 import { Star, ChevronLeft, ChevronRight, Quote, Loader2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Reveal from './Reveal'
-import api from '../api/axios'
+import api, { BASE_URL } from '../api/axios'
+
+// Helper to get image URL
+const getImgUrl = (path) => {
+  if (!path) return '';
+  return path.startsWith('http') ? path : `${BASE_URL}${path}`;
+};
 
 const Testimonials = () => {
   const [testimonials, setTestimonials] = useState([])
@@ -80,7 +86,7 @@ const Testimonials = () => {
                       <div className="flex items-center gap-5">
                         <div className="w-16 h-16 rounded-full border-2 border-amber-500/30 overflow-hidden ring-4 ring-black">
                             <img
-                            src={testimonials[currentIndex].image}
+                            src={getImgUrl(testimonials[currentIndex].image)}
                             alt={testimonials[currentIndex].name}
                             className="w-full h-full object-cover"
                             />

@@ -11,10 +11,15 @@ import {
   FolderOpen,
   ArrowRight
 } from 'lucide-react';
-import api from '../../api/axios';
+import api, { BASE_URL } from '../../api/axios';
 import toast from 'react-hot-toast';
 
 const Albums = () => {
+    // Helper to get image URL
+    const getImgUrl = (path) => {
+        if (!path) return '';
+        return path.startsWith('http') ? path : `${BASE_URL}${path}`;
+    };
   const [albums, setAlbums] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
@@ -56,6 +61,25 @@ const Albums = () => {
       fetchAlbums();
     } catch (error) {
       toast.error('Failed to delete album');
+    }
+  };
+
+  const handleCoverUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('image', file);
+    
+    toast.loading('Uploading cover photo...', { id: 'cover-upload' });
+    try {
+      const { data } = await api.post(`/upload`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setNewAlbum({...newAlbum, coverImage: data.url});
+      toast.success('Cover photo uploaded!', { id: 'cover-upload' });
+    } catch (error) {
+      toast.error('Upload failed.', { id: 'cover-upload' });
     }
   };
 
@@ -102,7 +126,7 @@ const Albums = () => {
               {/* Cover Preview */}
               <div className="relative h-56 overflow-hidden">
                 <img 
-                  src={album.coverImage} 
+                  src={getImgUrl(album.coverImage)} 
                   alt={album.title} 
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                 />
@@ -198,16 +222,27 @@ const Albums = () => {
                     placeholder="e.g. Summer Weddings 2025"
                   />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-widest text-gray-500 font-bold ml-1">Cover Image URL</label>
-                  <input 
-                    type="url" 
-                    required
-                    value={newAlbum.coverImage}
-                    onChange={(e) => setNewAlbum({...newAlbum, coverImage: e.target.value})}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-white outline-none focus:border-amber-500 transition-colors"
-                    placeholder="https://images.unsplash.com/..."
-                  />
+                <div className="space-y-3">
+                  <label className="text-[10px] uppercase tracking-widest text-gray-500 font-bold ml-1">Cover Image</label>
+                  <div className="flex items-center gap-3">
+                    <input 
+                      type="url" 
+                      required
+                      value={newAlbum.coverImage}
+                      onChange={(e) => setNewAlbum({...newAlbum, coverImage: e.target.value})}
+                      className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-white outline-none focus:border-amber-500 transition-colors"
+                      placeholder="Image URL"
+                    />
+                    <label className="bg-white/10 hover:bg-white/20 text-white px-4 py-3.5 rounded-xl cursor-pointer transition-colors text-sm font-bold flex items-center justify-center shrink-0 h-full">
+                      <ImageIcon className="w-4 h-4 mr-2" /> Upload
+                      <input type="file" className="hidden" onChange={handleCoverUpload} accept="image/*" />
+                    </label>
+                  </div>
+                  {newAlbum.coverImage && (
+                    <div className="mt-4 relative rounded-xl overflow-hidden aspect-[4/5] border border-white/10 w-32 h-40">
+                      <img src={getImgUrl(newAlbum.coverImage)} className="w-full h-full object-cover" alt="Cover Preview" />
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] uppercase tracking-widest text-gray-500 font-bold ml-1">Short Description</label>

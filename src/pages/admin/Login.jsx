@@ -56,7 +56,7 @@ const Login = () => {
           {/* Logo Section */}
           <div className="text-center mb-10">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 mb-4">
-              <Camera className="w-8 h-8 text-amber-500" />
+              <img src="/pbphotography.png" alt="PB Photography Logo" className="w-10 h-10 object-contain" />
             </div>
             <h1 className="text-2xl md:text-3xl font-playfair font-bold text-white mb-2">
               Admin <span className="text-amber-500">Access</span>

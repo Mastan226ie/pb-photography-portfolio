@@ -10,8 +10,8 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
           {/* Brand */}
           <div className="md:col-span-2 lg:col-span-2">
-            <div className="flex items-center space-x-2 mb-4">
-              <Camera className="w-8 h-8 text-amber-500" />
+            <div className="flex items-center space-x-3 mb-4">
+              <img src="/pbphotography.png" alt="PB Photography Logo" className="w-8 h-8 object-contain" />
               <span className="text-2xl font-playfair font-bold text-white">PB Photography</span>
             </div>
             <p className="text-gray-400 mb-4">
