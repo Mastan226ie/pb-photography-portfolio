@@ -8,6 +8,10 @@ const LocateUs = () => {
   const [feedback, setFeedback] = useState({ name: '', role: '', email: '', content: '', rating: 0 })
   const [hoverRating, setHoverRating] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  
+  // States for map interaction to prevent scroll trapping
+  const [mapHovered, setMapHovered] = useState(false)
+  const [mapInteractive, setMapInteractive] = useState(false)
 
   const handleFeedbackSubmit = async (e) => {
     e.preventDefault()
@@ -195,13 +199,24 @@ const LocateUs = () => {
               {/* Minimal Map Container */}
               <div 
                 className="flex-1 rounded-xl overflow-hidden relative ring-1 ring-white/10 group-hover:ring-amber-500/30 transition-all duration-500 min-h-[300px]"
+                onMouseEnter={() => setMapHovered(true)}
+                onMouseLeave={() => { setMapHovered(false); setMapInteractive(false); }}
+                onClick={() => setMapInteractive(true)}
+                title={!mapInteractive ? "Click to interact with map" : ""}
                 data-lenis-prevent="true"
               >
+                {/* Overlay to catch scroll unless interactive */}
+                {!mapInteractive && <div className="absolute inset-0 z-10 cursor-pointer" />}
+
                 {/* Google Maps iframe — exact PB Photography location */}
                 <iframe
                   title="PB Photography Location"
                   src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3825.6!2d80.6289158!3d16.5136158!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a35ef413a888f55%3A0x4956fafa4b7c8b8!2sPB%20Photography!5e0!3m2!1sen!2sin!4v1713200000000!5m2!1sen!2sin"
-                  className="absolute inset-0 w-full h-full opacity-60 mix-blend-luminosity grayscale contrast-125 transition-all duration-700 hover:opacity-100 hover:grayscale-0 hover:mix-blend-normal"
+                  className={`absolute inset-0 w-full h-full transition-all duration-700 ${
+                    mapHovered 
+                      ? 'opacity-100 grayscale-0 mix-blend-normal' 
+                      : 'opacity-60 mix-blend-luminosity grayscale contrast-125'
+                  }`}
                   style={{ border: 0 }}
                   allowFullScreen=""
                   loading="lazy"
