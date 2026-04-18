@@ -1,94 +1,61 @@
 import React, { useRef } from 'react'
-import { motion, useScroll, useTransform } from 'framer-motion'
+import {
+  motion,
+  useScroll,
+  useTransform,
+  useMotionValue,
+  useSpring,
+  AnimatePresence,
+} from 'framer-motion'
 
 /**
  * ScrollJourney
  * ──────────────────────────────────────────────────────────
- * A tall sticky container (500 vh) that drives a Z-axis
- * depth experience as the user scrolls.  Five "depth layers"
- * travel from far-in-front → behind the virtual camera,
- * with bokeh blur applied based on distance from the current
- * focal point.
+ * Phase 1 (scroll 0 → 0.35):  3-D lens zooms toward the camera.
+ *                               Aperture iris opens as the lens
+ *                               fills the screen.
+ * Phase 2 (scroll 0.35 → 1.0): Content layers emerge one-by-one
+ *                               from the lens opening, as though
+ *                               shooting through the glass.
  */
 
-/* ── Depth layer definitions ──────────────── */
-const LAYERS = [
-  {
-    id: 'lens1',
-    label: 'Giant Lens',
-    entryZ: 1200,
-    exitZ: -300,
-    focalAt: 0.12,  // scroll progress where this layer is "in focus"
-    content: <LensElement size={480} color="#f59e0b" opacity={0.6} />,
-    offsetX: '0%',
-    offsetY: '-5%',
-  },
-  {
-    id: 'prism',
-    label: 'Prism',
-    entryZ: 900,
-    exitZ: -500,
-    focalAt: 0.28,
-    content: <PrismElement />,
-    offsetX: '20%',
-    offsetY: '10%',
-  },
-  {
-    id: 'filmstrip',
-    label: 'Film Strip',
-    entryZ: 600,
-    exitZ: -700,
-    focalAt: 0.48,
-    content: <FilmStrip />,
-    offsetX: '-18%',
-    offsetY: '5%',
-  },
-  {
-    id: 'photoframe',
-    label: 'Photo Frame',
-    entryZ: 300,
-    exitZ: -900,
-    focalAt: 0.68,
-    content: <FloatingFrame />,
-    offsetX: '12%',
-    offsetY: '-8%',
-  },
-  {
-    id: 'titlecard',
-    label: 'Title Card',
-    entryZ: 0,
-    exitZ: -1200,
-    focalAt: 0.85,
-    content: <TitleCard />,
-    offsetX: '0%',
-    offsetY: '0%',
-  },
+/* ── Content that bursts through the lens ──────── */
+const CONTENT_LAYERS = [
+  { id: 'midcopy',    focalAt: 0.52, component: MidCopy    },
+  { id: 'filmstrip',  focalAt: 0.65, component: FilmStrip  },
+  { id: 'photoframe', focalAt: 0.78, component: FloatingFrame },
+  { id: 'titlecard',  focalAt: 0.90, component: TitleCard  },
 ]
 
-/* ── Helper: map scroll [0→1] to Z position ─ */
-function useLayerTransforms(scrollProgress, layer) {
-  const z = useTransform(
-    scrollProgress,
-    [0, 1],
-    [layer.entryZ, layer.exitZ]
-  )
+/* ── Map [0→1] progress to per-layer transform ───── */
+function useContentLayer(scrollProgress, focalAt) {
+  const HALF_WIN = 0.11
 
-  // Opacity: full at focal point, fades as distance increases
   const opacity = useTransform(scrollProgress, (v) => {
-    const dist = Math.abs(v - layer.focalAt)
-    return Math.max(0, 1 - dist * 3.5)
+    const dist = Math.abs(v - focalAt)
+    return Math.max(0, 1 - dist * 8.5)
   })
 
-  // Scale: slight depth-of-field scale bonus at focus
   const scale = useTransform(scrollProgress, (v) => {
-    const dist = Math.abs(v - layer.focalAt)
-    return 1 + Math.max(0, 0.06 - dist * 0.2)
+    if (v < focalAt - HALF_WIN) return 0.1   // tiny, inside the lens
+    if (v > focalAt + HALF_WIN) return 1.45  // blown past
+    const t = (v - (focalAt - HALF_WIN)) / (HALF_WIN * 2)
+    return 0.1 + t * (1 - 0.1)
   })
 
-  return { z, opacity, scale }
+  const z = useTransform(scrollProgress, (v) => {
+    if (v < focalAt - HALF_WIN) return 900
+    if (v > focalAt + HALF_WIN) return -450
+    const t = (v - (focalAt - HALF_WIN)) / (HALF_WIN * 2)
+    return 900 - t * 1350
+  })
+
+  return { opacity, scale, z }
 }
 
-/* ── ScrollJourney (main) ─────────────────── */
+/* ══════════════════════════════════════════════
+   MAIN COMPONENT
+   ══════════════════════════════════════════════ */
 const ScrollJourney = () => {
   const containerRef = useRef(null)
   const { scrollYProgress } = useScroll({
@@ -96,34 +63,41 @@ const ScrollJourney = () => {
     offset: ['start start', 'end end'],
   })
 
-  // Central copy that fades in at mid-scroll
-  const midOpacity = useTransform(scrollYProgress, [0.3, 0.5, 0.7, 0.9], [0, 1, 1, 0])
-  const midY = useTransform(scrollYProgress, [0.3, 0.5], [40, 0])
+  /*
+   * Phase 1 (0 → 0.42): Lens zooms in from small → fills screen
+   *   • Iris opens during 0.14 → 0.42
+   * Phase 2 (0.42 → 1.0): Content bursts through the open aperture
+   */
+  const lensScale   = useTransform(scrollYProgress, [0, 0.42], [0.45, 5.2])
+  const lensOpacity = useTransform(scrollYProgress, [0, 0.05, 0.36, 0.46], [0, 1, 1, 0])
 
-  // Text that slides up at end
-  const endOpacity = useTransform(scrollYProgress, [0.78, 0.9], [0, 1])
-  const endY = useTransform(scrollYProgress, [0.78, 0.9], [60, 0])
+  /* Iris opens as the lens zooms in — 0 = fully closed, 1 = wide open */
+  const irisProgress = useTransform(scrollYProgress, [0.12, 0.42], [0, 1])
+
+  /* End section teaser — shows after last content card (0.90) fades */
+  const endOpacity = useTransform(scrollYProgress, [0.94, 0.99], [0, 1])
+  const endY       = useTransform(scrollYProgress, [0.94, 0.99], [60, 0])
 
   return (
     <section
       id="journey"
       ref={containerRef}
-      style={{ height: '300vh', position: 'relative' }}
+      style={{ height: '380vh', position: 'relative' }}
       aria-label="Cinematic scroll journey"
     >
       {/* ── Sticky stage ──────────────────── */}
-      <div className="journey-stage flex items-center justify-center bg-black">
+      <div className="journey-stage flex items-center justify-center bg-[#0a0a0a]">
 
-        {/* Dark vignette edges */}
+        {/* Dark vignette */}
         <div
           className="absolute inset-0 pointer-events-none z-10"
           style={{
             background:
-              'radial-gradient(ellipse 80% 80% at 50% 50%, transparent 40%, rgba(0,0,0,0.8) 100%)',
+              'radial-gradient(ellipse 75% 75% at 50% 50%, transparent 35%, rgba(0,0,0,0.55) 100%)',
           }}
         />
 
-        {/* Subtle film grain overlay */}
+        {/* Film-grain overlay */}
         <div
           className="absolute inset-0 pointer-events-none z-10 opacity-[0.04]"
           style={{
@@ -132,33 +106,41 @@ const ScrollJourney = () => {
           }}
         />
 
-        {/* ── Depth layers ─────────────────── */}
-        {LAYERS.map((layer) => (
-          <DepthLayer
-            key={layer.id}
-            layer={layer}
-            scrollProgress={scrollYProgress}
-          />
-        ))}
-
-        {/* ── Mid-screen copy ──────────────── */}
+        {/* ── LENS (phase 1) ─────────────────────── */}
         <motion.div
-          style={{ opacity: midOpacity, y: midY }}
-          className="absolute z-20 text-center pointer-events-none"
+          style={{
+            scale: lensScale,
+            opacity: lensOpacity,
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            top: 0,
+            bottom: 0,
+            margin: 'auto',
+            width: 420,
+            height: 420,
+            willChange: 'transform, opacity',
+            zIndex: 20,
+          }}
         >
-          <p className="text-amber-400/70 text-sm tracking-[0.35em] uppercase mb-3 font-poppins">
-            Through the lens
-          </p>
-          <h2 className="font-playfair text-5xl md:text-7xl font-bold text-white/80 leading-tight">
-            Every Frame<br />
-            <span className="text-amber-400">Tells a Story</span>
-          </h2>
+          <LensElement size={420} irisProgress={irisProgress} />
         </motion.div>
+
+        {/* ── CONTENT (phase 2) ─────────────────── */}
+        {CONTENT_LAYERS.map((layer) => (
+          <ContentLayer
+            key={layer.id}
+            focalAt={layer.focalAt}
+            scrollProgress={scrollYProgress}
+          >
+            <layer.component />
+          </ContentLayer>
+        ))}
 
         {/* ── End-section teaser ───────────── */}
         <motion.div
           style={{ opacity: endOpacity, y: endY }}
-          className="absolute bottom-12 z-20 text-center pointer-events-none"
+          className="absolute bottom-12 z-30 text-center pointer-events-none"
         >
           <p className="text-white/40 text-xs tracking-[0.3em] uppercase font-poppins">
             Scroll to connect with us ↓
@@ -172,31 +154,31 @@ const ScrollJourney = () => {
   )
 }
 
-/* ── Individual depth layer ───────────────── */
-const DepthLayer = ({ layer, scrollProgress }) => {
-  const { z, opacity, scale } = useLayerTransforms(scrollProgress, layer)
+/* ── Content layer — pops out of the lens iris ── */
+const ContentLayer = ({ focalAt, scrollProgress, children }) => {
+  const { opacity, scale, z } = useContentLayer(scrollProgress, focalAt)
 
   return (
     <motion.div
       style={{
-        z,
         opacity,
         scale,
+        z,
         position: 'absolute',
-        left: `calc(50% + ${layer.offsetX})`,
-        top: `calc(50% + ${layer.offsetY})`,
-        transform: 'translate(-50%, -50%)',
+        left: '50%',
+        top: '50%',
+        x: '-50%',
+        y: '-50%',
         willChange: 'transform, opacity',
+        zIndex: 25,
       }}
     >
-      {layer.content}
+      {children}
     </motion.div>
   )
 }
 
-
-
-/* ── Scroll progress side pip ─────────────── */
+/* ── Scroll progress side pip ─────────────────── */
 const ScrollProgressPip = ({ progress }) => {
   const height = useTransform(progress, [0, 1], ['0%', '100%'])
   return (
@@ -211,124 +193,182 @@ const ScrollProgressPip = ({ progress }) => {
 }
 
 /* ════════════════════════════════════════════
-   LAYER CONTENT COMPONENTS
+   LENS ELEMENT — 3-D barrel + scroll-driven iris
    ════════════════════════════════════════════ */
+function LensElement({ size = 420, irisProgress }) {
+  const x = useMotionValue(0.5)
+  const y = useMotionValue(0.5)
 
-/* ── Giant Glass Lens ────────────────────── */
-function LensElement({ size = 400, color = '#f59e0b', opacity = 0.5 }) {
+  const rotateX = useTransform(useSpring(y, { stiffness: 80, damping: 25 }), [0, 1], [28, -28])
+  const rotateY = useTransform(useSpring(x, { stiffness: 80, damping: 25 }), [0, 1], [-28, 28])
+
+  const handleMouseMove = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect()
+    x.set((e.clientX - rect.left) / rect.width)
+    y.set((e.clientY - rect.top) / rect.height)
+  }
+  const handleMouseLeave = () => { x.set(0.5); y.set(0.5) }
+
+  const RINGS = 14
+
   return (
-    <div style={{ width: size, height: size }} className="relative flex items-center justify-center">
-      {/* Outer glow */}
-      <div
-        className="absolute inset-0 rounded-full"
+    <div
+      style={{ width: size, height: size, perspective: 1800 }}
+      className="relative flex items-center justify-center pointer-events-auto group"
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+    >
+      <motion.div
         style={{
-          background: `radial-gradient(circle, ${color}08 0%, transparent 70%)`,
-          filter: 'blur(30px)',
+          width: '100%',
+          height: '100%',
+          rotateX,
+          rotateY,
+          transformStyle: 'preserve-3d',
         }}
-      />
-      {/* Concentric rings */}
-      {[1, 0.78, 0.57, 0.38].map((scale, i) => (
-        <div
-          key={i}
-          className="absolute rounded-full"
-          style={{
-            width: `${scale * 100}%`,
-            height: `${scale * 100}%`,
-            border: `${2 - i * 0.3}px solid ${color}`,
-            opacity: opacity - i * 0.1,
-            boxShadow: i === 0
-              ? `0 0 40px ${color}20, inset 0 0 40px ${color}10`
-              : 'none',
-          }}
-        />
-      ))}
-      {/* Glass tint */}
-      <div
-        className="absolute rounded-full"
-        style={{
-          width: '36%',
-          height: '36%',
-          background: `radial-gradient(circle at 35% 35%, ${color}18, transparent 70%)`,
-          border: `1px solid ${color}30`,
-        }}
-      />
-      {/* Aperture blades */}
-      {Array.from({ length: 8 }, (_, i) => {
-        const angle = (i / 8) * 360
-        return (
-          <div
-            key={i}
-            className="absolute"
-            style={{
-              width: '40%',
-              height: '1px',
-              background: `linear-gradient(to right, transparent, ${color}40, transparent)`,
-              transformOrigin: '50% 50%',
-              transform: `rotate(${angle}deg)`,
-            }}
-          />
-        )
-      })}
-      {/* Lens label */}
-      <p
-        className="absolute bottom-6 font-poppins text-xs tracking-[0.3em] uppercase"
-        style={{ color: `${color}60` }}
+        className="relative flex items-center justify-center cursor-crosshair"
       >
-        50mm f/1.4
-      </p>
+        {/* Barrel rings */}
+        {Array.from({ length: RINGS }).map((_, i) => {
+          const z   = i * -28
+          const isFront = i === 0
+          return (
+            <div
+              key={`barrel-${i}`}
+              className="absolute inset-0 rounded-full"
+              style={{
+                background: isFront ? '#090909' : 'transparent',
+                border: isFront ? '18px solid #141414' : '4px solid #1c1c1c',
+                boxShadow: isFront ? 'inset 0 0 60px rgba(0,0,0,1)' : 'none',
+                transform: `translateZ(${z}px)`,
+                transformStyle: 'preserve-3d',
+              }}
+            >
+              {!isFront && i < RINGS - 1 && (
+                <div className="absolute inset-0 rounded-full border-[10px] border-[#090909] opacity-80" />
+              )}
+            </div>
+          )
+        })}
+
+        {/* Front glass */}
+        <div
+          className="absolute rounded-full overflow-hidden shadow-[0_0_100px_rgba(245,158,11,0.20)]"
+          style={{
+            inset: 15,
+            background: 'radial-gradient(ellipse at 28% 28%, rgba(245,158,11,0.18) 0%, rgba(0,0,0,0.85) 70%)',
+            border: '2px solid rgba(255,255,255,0.05)',
+            transform: 'translateZ(-8px)',
+          }}
+        >
+          {/* Glass reflections */}
+          <div className="absolute top-[-20%] left-[-20%] w-[140%] h-[140%] bg-gradient-to-br from-white/10 via-transparent to-transparent rotate-[35deg] mix-blend-screen opacity-50 transition-transform duration-700 group-hover:rotate-[65deg]" />
+          <div className="absolute top-[10%] left-[10%] w-[40%] h-[40%] bg-blue-400/5 rounded-full blur-[30px]" />
+          <div className="absolute bottom-[20%] right-[10%] w-[50%] h-[50%] bg-amber-500/10 rounded-full blur-[40px]" />
+
+          {/* ── Scroll-driven iris aperture overlay ── */}
+          <IrisOverlay progress={irisProgress} />
+        </div>
+
+        {/* Deep inner glass */}
+        <div
+          className="absolute inset-[30%] rounded-full border border-white/5 bg-gradient-to-tr from-transparent to-white/5"
+          style={{ transform: 'translateZ(-140px)', boxShadow: '0 0 50px rgba(0,0,0,0.9)' }}
+        />
+        <div
+          className="absolute inset-[40%] rounded-full bg-black/90"
+          style={{ transform: 'translateZ(-200px)' }}
+        />
+      </motion.div>
+
+      {/* Ambient glow */}
+      <div className="absolute inset-[-60px] rounded-full bg-amber-500/10 blur-[110px] -z-10 pointer-events-none" />
     </div>
   )
 }
 
-/* ── Prism ───────────────────────────────── */
-function PrismElement() {
+/* ── Iris aperture overlay — 8 blades animate open ── */
+function IrisOverlay({ progress }) {
+  const BLADES = 8
+
+  /* skewX goes from ~38° (closed) to 0° (wide open) */
+  const skewX = useTransform(progress, [0, 1], [38, 0])
+
+  /* The central pupil shrinks to reveal the "through the glass" glow */
+  const pupilScale    = useTransform(progress, [0, 1], [1, 0])
+  const pupilOpacity  = useTransform(progress, [0, 0.6, 1], [1, 0.5, 0])
+
+  /* An amber burst emenates as the iris opens */
+  const burstOpacity = useTransform(progress, [0, 0.4, 0.85, 1], [0, 0, 0.6, 0])
+  const burstScale   = useTransform(progress, [0, 0.85, 1], [0.4, 1, 1.6])
+
   return (
-    <div className="relative" style={{ width: 220, height: 220 }}>
-      <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-        {/* Prism triangle */}
-        <polygon
-          points="100,20 180,170 20,170"
-          stroke="#f59e0b"
-          strokeWidth="2"
-          fill="rgba(245,158,11,0.04)"
-          strokeOpacity="0.6"
+    <div className="absolute inset-0 pointer-events-none" style={{ borderRadius: '50%', overflow: 'hidden' }}>
+      {/* Blades */}
+      {Array.from({ length: BLADES }).map((_, i) => (
+        <motion.div
+          key={i}
+          className="absolute"
+          style={{
+            width: '120%',
+            height: '100%',
+            background: 'linear-gradient(to right, rgba(8,8,8,0.97), rgba(18,18,18,0.97))',
+            borderLeft: '1px solid rgba(245,158,11,0.35)',
+            transformOrigin: '0% 100%',
+            left: '50%',
+            top: '-50%',
+            rotate: i * (360 / BLADES),
+            skewX,
+          }}
         />
-        {/* Inner glow */}
-        <polygon
-          points="100,40 165,160 35,160"
-          stroke="#f59e0b"
-          strokeWidth="1"
-          fill="none"
-          strokeOpacity="0.25"
-        />
-        {/* Rainbow dispersion rays */}
-        {[
-          { x1: 180, y1: 170, x2: 230, y2: 130, color: '#ef4444' },
-          { x1: 180, y1: 170, x2: 235, y2: 145, color: '#f97316' },
-          { x1: 180, y1: 170, x2: 238, y2: 162, color: '#eab308' },
-          { x1: 180, y1: 170, x2: 235, y2: 180, color: '#22c55e' },
-          { x1: 180, y1: 170, x2: 228, y2: 196, color: '#3b82f6' },
-          { x1: 180, y1: 170, x2: 218, y2: 210, color: '#8b5cf6' },
-        ].map((ray, i) => (
-          <line
-            key={i}
-            x1={ray.x1} y1={ray.y1} x2={ray.x2} y2={ray.y2}
-            stroke={ray.color}
-            strokeWidth="2"
-            strokeOpacity="0.7"
-          />
-        ))}
-        {/* Light entry ray */}
-        <line x1="10" y1="80" x2="100" y2="95"
-          stroke="white" strokeWidth="1.5" strokeOpacity="0.5" strokeDasharray="4 3" />
-        {/* Corner glint */}
-        <circle cx="100" cy="20" r="3" fill="#f59e0b" fillOpacity="0.8" />
-        <circle cx="20"  cy="170" r="2" fill="#f59e0b" fillOpacity="0.5" />
-        <circle cx="180" cy="170" r="2" fill="#f59e0b" fillOpacity="0.5" />
-      </svg>
-      <p className="absolute bottom-0 left-1/2 -translate-x-1/2 font-playfair italic text-amber-500/40 text-xs whitespace-nowrap">
-        Light Dispersion
+      ))}
+
+      {/* Central pupil (dark disc that shrinks away) */}
+      <motion.div
+        className="absolute inset-0 m-auto rounded-full bg-black"
+        style={{
+          width: '55%',
+          height: '55%',
+          left: '22.5%',
+          top: '22.5%',
+          scale: pupilScale,
+          opacity: pupilOpacity,
+        }}
+      />
+
+      {/* Amber light burst as iris opens */}
+      <motion.div
+        className="absolute inset-0 m-auto rounded-full"
+        style={{
+          width: '60%',
+          height: '60%',
+          left: '20%',
+          top: '20%',
+          background: 'radial-gradient(circle, rgba(245,158,11,0.55) 0%, rgba(245,158,11,0.1) 50%, transparent 70%)',
+          scale: burstScale,
+          opacity: burstOpacity,
+          filter: 'blur(8px)',
+        }}
+      />
+    </div>
+  )
+}
+
+/* ════════════════════════════════════════════
+   LAYER CONTENT COMPONENTS
+   ════════════════════════════════════════════ */
+
+/* ── Mid Copy ─────────────────────────────── */
+function MidCopy() {
+  return (
+    <div className="text-center px-4" style={{ width: 600 }}>
+      <p className="text-amber-400/70 text-sm tracking-[0.35em] uppercase mb-3 font-poppins">
+        Through the lens
       </p>
+      <h2 className="font-playfair text-5xl md:text-7xl font-bold text-white/80 leading-tight drop-shadow-2xl">
+        Every Frame<br />
+        <span className="text-amber-400">Tells a Story</span>
+      </h2>
     </div>
   )
 }
@@ -336,11 +376,10 @@ function PrismElement() {
 /* ── Film Strip ──────────────────────────── */
 function FilmStrip() {
   const frames = [
-    'https://images.unsplash.com/photo-1537633552985-df8429e8048b?w=160&h=120&fit=crop',
-    'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=160&h=120&fit=crop',
-    'https://images.unsplash.com/photo-1519741497674-611481863552?w=160&h=120&fit=crop',
-    'https://images.unsplash.com/photo-1606216794074-735e91aa2c92?w=160&h=120&fit=crop',
-    'https://images.unsplash.com/photo-1469371670807-013ccf25f16a?w=160&h=120&fit=crop',
+    '/p1.png',
+    '/p2.png',
+    '/p3.png',
+    '/p4.png',
   ]
   return (
     <div
@@ -398,23 +437,13 @@ function FloatingFrame() {
       {/* Back polaroid */}
       <div
         className="absolute bg-white rounded-sm shadow-2xl"
-        style={{
-          width: 240,
-          padding: 10,
-          bottom: -16,
-          left: 30,
-          transform: 'rotate(6deg)',
-          zIndex: 0,
-        }}
+        style={{ width: 240, padding: 10, bottom: -16, left: 30, transform: 'rotate(6deg)', zIndex: 0 }}
       >
         <div style={{ height: 180, background: '#ddd' }} className="rounded-sm" />
         <div className="h-10" />
       </div>
       {/* Front polaroid */}
-      <div
-        className="relative bg-white rounded-sm shadow-2xl z-10"
-        style={{ width: 260, padding: 12 }}
-      >
+      <div className="relative bg-white rounded-sm shadow-2xl z-10" style={{ width: 260, padding: 12 }}>
         <div style={{ height: 200 }} className="overflow-hidden rounded-sm">
           <img
             src="https://images.unsplash.com/photo-1554048612-b6a482bc67e5?w=400&h=280&fit=crop"
@@ -422,9 +451,7 @@ function FloatingFrame() {
             className="w-full h-full object-cover"
           />
         </div>
-        <div
-          className="h-12 flex items-center justify-center font-playfair italic text-amber-900/50 text-sm"
-        >
+        <div className="h-12 flex items-center justify-center font-playfair italic text-amber-900/50 text-sm">
           Wedding Day ♥
         </div>
       </div>
@@ -436,7 +463,6 @@ function FloatingFrame() {
 function TitleCard() {
   return (
     <div className="text-center px-8" style={{ maxWidth: 600 }}>
-      {/* Amber divider line */}
       <div className="flex items-center gap-4 mb-6">
         <div className="flex-1 h-px bg-gradient-to-r from-transparent to-amber-500/50" />
         <div className="w-2 h-2 rounded-full bg-amber-500" />

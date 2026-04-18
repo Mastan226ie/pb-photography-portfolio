@@ -1,54 +1,41 @@
-import React, { useState } from 'react'
-import { Star, ChevronLeft, ChevronRight, Quote } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import { Star, ChevronLeft, ChevronRight, Quote, Loader2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import Reveal from './Reveal'
+import api, { BASE_URL } from '../api/axios'
 
-const testimonials = [
-  {
-    id: 1,
-    name: "Sarah Johnson",
-    role: "Wedding Client",
-    image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop",
-    content: "Absolutely breathtaking work! The photos captured every special moment of our wedding day perfectly. The attention to detail and creativity was outstanding. We'll cherish these memories forever.",
-    rating: 5,
-    date: "December 2024"
-  },
-  {
-    id: 2,
-    name: "Michael Chen",
-    role: "Portrait Client",
-    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop",
-    content: "Incredible photographer! Made me feel completely comfortable during the shoot. The results exceeded all expectations. Professional, creative, and truly talented.",
-    rating: 5,
-    date: "November 2024"
-  },
-  {
-    id: 3,
-    name: "Emily Rodriguez",
-    role: "Family Session",
-    image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop",
-    content: "Amazing experience from start to finish. The photos captured our family's personality perfectly. The book opening animation on the website is such a beautiful way to showcase the work!",
-    rating: 5,
-    date: "January 2025"
-  },
-  {
-    id: 4,
-    name: "David Kim",
-    role: "Corporate Event",
-    image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop",
-    content: "Professional, punctual, and produced stunning results. The team captured our corporate event perfectly. Highly recommended for any professional photography needs.",
-    rating: 5,
-    date: "October 2024"
-  }
-]
+// Helper to get image URL
+const getImgUrl = (path) => {
+  if (!path) return '';
+  return path.startsWith('http') ? path : `${BASE_URL}${path}`;
+};
 
 const Testimonials = () => {
+  const [testimonials, setTestimonials] = useState([])
+  const [loading, setLoading] = useState(true)
   const [currentIndex, setCurrentIndex] = useState(0)
 
+  useEffect(() => {
+    const fetchTestimonials = async () => {
+      try {
+        const { data } = await api.get('/testimonials')
+        setTestimonials(data)
+      } catch (error) {
+        console.error('Failed to fetch testimonials:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchTestimonials()
+  }, [])
+
   const nextTestimonial = () => {
+    if (testimonials.length === 0) return
     setCurrentIndex((prev) => (prev + 1) % testimonials.length)
   }
 
   const prevTestimonial = () => {
+    if (testimonials.length === 0) return
     setCurrentIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length)
   }
 
@@ -60,103 +47,113 @@ const Testimonials = () => {
       </div>
 
       <div className="container-custom relative z-10">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          viewport={{ once: true }}
-          className="text-center mb-12"
-        >
-          <span className="text-amber-500 font-semibold tracking-wider uppercase text-sm">Client Love</span>
-          <h2 className="text-4xl md:text-5xl font-playfair font-bold mt-2 mb-4">
-            What Our <span className="text-amber-500">Clients Say</span>
-          </h2>
-          <p className="text-gray-400 max-w-2xl mx-auto">
-            Don't just take our word for it - hear from the amazing people we've had the pleasure of working with.
-          </p>
-        </motion.div>
+        <Reveal dir="up">
+          <div className="text-center mb-12">
+            <span className="text-amber-500 font-semibold tracking-[0.3em] uppercase text-sm font-poppins">Client Love</span>
+            <h2 className="text-4xl md:text-5xl font-playfair font-bold mt-2 mb-4">
+              What Our <span className="text-amber-500">Clients Say</span>
+            </h2>
+            <p className="text-gray-400 max-w-2xl mx-auto font-poppins text-sm leading-relaxed">
+              Don't just take our word for it - hear from the amazing people we've had the pleasure of working with.
+            </p>
+          </div>
+        </Reveal>
 
         <div className="max-w-4xl mx-auto">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentIndex}
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -50 }}
-              transition={{ duration: 0.5 }}
-              className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-8 md:p-12 shadow-2xl"
-            >
-              <Quote className="w-12 h-12 text-amber-500 mb-6 opacity-50" />
-              <p className="text-xl md:text-2xl text-gray-200 mb-6 leading-relaxed">
-                "{testimonials[currentIndex].content}"
-              </p>
-              <div className="flex items-center justify-between flex-wrap gap-4">
-                <div className="flex items-center gap-4">
-                  <img
-                    src={testimonials[currentIndex].image}
-                    alt={testimonials[currentIndex].name}
-                    className="w-16 h-16 rounded-full object-cover border-2 border-amber-500"
-                  />
-                  <div>
-                    <h4 className="text-xl font-semibold text-white">{testimonials[currentIndex].name}</h4>
-                    <p className="text-gray-400">{testimonials[currentIndex].role}</p>
-                    <div className="flex gap-1 mt-1">
-                      {[...Array(testimonials[currentIndex].rating)].map((_, i) => (
-                        <Star key={i} className="w-4 h-4 fill-amber-500 text-amber-500" />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                <div className="text-gray-500 text-sm">{testimonials[currentIndex].date}</div>
-              </div>
-            </motion.div>
-          </AnimatePresence>
-
-          {/* Navigation Buttons */}
-          <div className="flex justify-center gap-4 mt-8">
-            <button
-              onClick={prevTestimonial}
-              className="p-2 rounded-full bg-gray-800 hover:bg-amber-500 transition-all duration-300 group"
-            >
-              <ChevronLeft className="w-6 h-6 text-white group-hover:text-black" />
-            </button>
-            <div className="flex gap-2">
-              {testimonials.map((_, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setCurrentIndex(idx)}
-                  className={`w-2 h-2 rounded-full transition-all duration-300 ${idx === currentIndex ? 'w-8 bg-amber-500' : 'bg-gray-600 hover:bg-gray-400'}`}
-                />
-              ))}
+          {loading ? (
+            <div className="h-[400px] flex items-center justify-center">
+                <Loader2 className="w-10 h-10 text-amber-500 animate-spin" />
             </div>
-            <button
-              onClick={nextTestimonial}
-              className="p-2 rounded-full bg-gray-800 hover:bg-amber-500 transition-all duration-300 group"
-            >
-              <ChevronRight className="w-6 h-6 text-white group-hover:text-black" />
-            </button>
-          </div>
+          ) : testimonials.length > 0 ? (
+            <>
+              <Reveal delay={0.2} random>
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={currentIndex}
+                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                    transition={{ duration: 0.5, ease: "easeOut" }}
+                    className="bg-gradient-to-br from-gray-900 to-[#121212] rounded-3xl p-8 md:p-14 shadow-2xl border border-white/5 relative overflow-hidden"
+                  >
+                    <Quote className="absolute top-8 right-8 w-20 h-20 text-amber-500/5 pointer-events-none" />
+                    
+                    <p className="text-xl md:text-2xl text-gray-200 mb-10 leading-relaxed font-playfair italic">
+                      "{testimonials[currentIndex].content}"
+                    </p>
+                    
+                    <div className="flex items-center justify-between flex-wrap gap-6 pt-8 border-t border-white/5">
+                      <div className="flex items-center gap-5">
+                        <div className="w-16 h-16 rounded-full border-2 border-amber-500/30 overflow-hidden ring-4 ring-black">
+                            <img
+                            src={getImgUrl(testimonials[currentIndex].image)}
+                            alt={testimonials[currentIndex].name}
+                            className="w-full h-full object-cover"
+                            />
+                        </div>
+                        <div>
+                          <h4 className="text-xl font-playfair font-bold text-white mb-0.5">{testimonials[currentIndex].name}</h4>
+                          <p className="text-amber-500 text-[10px] uppercase font-bold tracking-[0.2em]">{testimonials[currentIndex].role}</p>
+                          <div className="flex gap-1 mt-2">
+                            {[...Array(5)].map((_, i) => (
+                              <Star key={i} className={`w-3.5 h-3.5 ${i < testimonials[currentIndex].rating ? 'fill-amber-500 text-amber-500' : 'text-gray-700'}`} />
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-gray-600 text-[10px] uppercase tracking-widest font-mono font-bold bg-white/5 px-3 py-1.5 rounded-full border border-white/5">
+                        {testimonials[currentIndex].date}
+                      </div>
+                    </div>
+                  </motion.div>
+                </AnimatePresence>
+              </Reveal>
+
+              <div className="flex justify-center gap-6 mt-12 items-center">
+                <button
+                  onClick={prevTestimonial}
+                  className="w-12 h-12 flex items-center justify-center rounded-2xl bg-white/5 border border-white/10 hover:border-amber-500 hover:text-amber-500 transition-all group"
+                >
+                  <ChevronLeft className="w-6 h-6 text-gray-400 group-hover:text-amber-500 transition-colors" />
+                </button>
+                <div className="flex gap-2.5">
+                  {testimonials.map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setCurrentIndex(idx)}
+                      className={`h-1.5 rounded-full transition-all duration-500 ${idx === currentIndex ? 'w-10 bg-amber-500' : 'w-2 bg-gray-800 hover:bg-gray-600'}`}
+                    />
+                  ))}
+                </div>
+                <button
+                  onClick={nextTestimonial}
+                  className="w-12 h-12 flex items-center justify-center rounded-2xl bg-white/5 border border-white/10 hover:border-amber-500 hover:text-amber-500 transition-all group"
+                >
+                  <ChevronRight className="w-6 h-6 text-gray-400 group-hover:text-amber-500 transition-colors" />
+                </button>
+              </div>
+            </>
+          ) : (
+             <div className="text-center py-20 bg-white/[0.02] border border-dashed border-white/10 rounded-3xl">
+                <p className="text-gray-500 uppercase tracking-widest text-xs font-bold">No verified feedback yet</p>
+             </div>
+          )}
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mt-16">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 mt-24 max-w-5xl mx-auto">
           {[
             { number: "500+", label: "Happy Clients" },
             { number: "1000+", label: "Photos Taken" },
             { number: "50+", label: "Events Covered" },
             { number: "100%", label: "Satisfaction" },
           ].map((stat, idx) => (
-            <motion.div
-              key={idx}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: idx * 0.1 }}
-              viewport={{ once: true }}
-              className="text-center"
-            >
-              <h3 className="text-3xl md:text-4xl font-bold text-amber-500">{stat.number}</h3>
-              <p className="text-gray-400 mt-2">{stat.label}</p>
-            </motion.div>
+            <Reveal key={idx} delay={idx * 0.1}>
+              <div className="text-center group">
+                <h3 className="text-4xl md:text-5xl font-playfair font-bold text-white group-hover:text-amber-500 transition-colors duration-500">{stat.number}</h3>
+                <p className="text-gray-500 text-[10px] uppercase tracking-[0.2em] font-bold mt-2">{stat.label}</p>
+              </div>
+            </Reveal>
           ))}
         </div>
       </div>

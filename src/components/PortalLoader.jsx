@@ -52,7 +52,7 @@ const PortalLoader = ({ onComplete }) => {
       animate={outerCtrl}
       initial={{ opacity: 1 }}
       className="loader-overlay"
-      style={{ background: '#000' }}
+      style={{ background: '#0a0a0a' }}
     >
       {/* Ambient bokeh rings */}
       {[240, 380, 520].map((size, i) => (

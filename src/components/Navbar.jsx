@@ -1,20 +1,20 @@
-import React, { useState, useEffect, useCallback } from 'react'
-import { motion, useScroll, useSpring } from 'framer-motion'
+import React, { useState, useCallback } from 'react'
+import { motion, useScroll, useTransform, useMotionTemplate, useSpring } from 'framer-motion'
 import { Camera, Menu, X } from 'lucide-react'
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false)
-  const [scrolled, setScrolled] = useState(false)
 
-  /* ── Scroll progress bar ────────────── */
-  const { scrollYProgress } = useScroll()
-  const scaleX = useSpring(scrollYProgress, { stiffness: 200, damping: 30 })
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 60)
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
+  const { scrollY } = useScroll()
+  const smoothY = useSpring(scrollY, { stiffness: 60, damping: 20, restDelta: 1 })
+  const bgOpacity = useTransform(smoothY, [0, 100], [0, 0.85])
+  const bg = useMotionTemplate`rgba(0, 0, 0, ${bgOpacity})`
+  const blurValue = useTransform(smoothY, [0, 100], [0, 12])
+  const backdropFilter = useMotionTemplate`blur(${blurValue}px)`
+  const borderOpacity = useTransform(smoothY, [0, 100], [0, 0.06])
+  const borderBottom = useMotionTemplate`1px solid rgba(255, 255, 255, ${borderOpacity})`
+  // 1.25rem = 20px (py-5), 0.75rem = 12px (py-3)
+  const py = useTransform(smoothY, [0, 100], ['1.25rem', '0.75rem'])
 
   const closeMenu = useCallback(() => setIsOpen(false), [])
 
@@ -28,65 +28,36 @@ const Navbar = () => {
 
   return (
     <>
-      {/* ── Scroll Progress Bar ──────────── */}
-      <motion.div
-        style={{
-          scaleX,
-          transformOrigin: '0%',
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          height: 2,
-          background: 'linear-gradient(to right, #f59e0b, #d97706)',
-          zIndex: 60,
-        }}
-        aria-hidden="true"
-      />
-
       {/* ── Navbar ───────────────────────── */}
       <motion.nav
         initial={{ y: -80, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-        className={`fixed w-full z-50 transition-all duration-500 ${
-          scrolled
-            ? 'py-3'
-            : 'py-5'
-        }`}
+        className="fixed w-full z-50"
         style={{
-          background: scrolled
-            ? 'rgba(0, 0, 0, 0.85)'
-            : 'transparent',
-          backdropFilter: scrolled ? 'blur(12px)' : 'none',
-          WebkitBackdropFilter: scrolled ? 'blur(12px)' : 'none',
-          borderBottom: scrolled ? '1px solid rgba(255,255,255,0.06)' : 'none',
-          willChange: 'background, backdrop-filter',
+          paddingTop: py,
+          paddingBottom: py,
+          background: bg,
+          backdropFilter: backdropFilter,
+          WebkitBackdropFilter: backdropFilter,
+          borderBottom: borderBottom,
+          willChange: 'background, backdrop-filter, padding',
         }}
       >
         <div className="container-custom flex justify-between items-center">
           {/* ── Logo ──────────────────────── */}
           <a
             href="#home"
-            className="flex items-center gap-3 group"
+            className="flex items-center group"
             aria-label="PB Photography — Home"
           >
-            {/* Camera icon */}
-            <motion.div
-              whileHover={{ rotate: 15, scale: 1.1 }}
+            <motion.img
+              whileHover={{ scale: 1.05 }}
               transition={{ type: 'spring', stiffness: 300 }}
-              className="w-9 h-9 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center"
-            >
-              <Camera className="w-5 h-5 text-amber-400" />
-            </motion.div>
-            <div className="flex flex-col leading-none">
-              <span className="font-playfair font-bold text-xl text-white">
-                PB<span className="text-amber-500">.</span>
-              </span>
-              <span className="text-[9px] tracking-[0.25em] text-white/40 uppercase font-poppins">
-                Photography
-              </span>
-            </div>
+              src="/pbphotography.png" 
+              alt="PB Photography"
+              className="h-10 md:h-12 w-auto object-contain"
+            />
           </a>
 
           {/* ── Desktop Links ─────────────── */}
@@ -95,14 +66,12 @@ const Navbar = () => {
               <a
                 key={link.name}
                 href={link.href}
-                className="relative text-white/70 hover:text-amber-400 text-sm font-poppins font-medium group"
+                className="relative text-white/70 hover:text-amber-400 text-sm font-poppins font-medium group transition-all duration-300 hover:wavy-underline"
+                style={{ textDecorationColor: 'transparent' }}
+                onMouseEnter={(e) => e.currentTarget.style.textDecorationColor = '#f59e0b'}
+                onMouseLeave={(e) => e.currentTarget.style.textDecorationColor = 'transparent'}
               >
                 {link.name}
-                {/* Underline hover */}
-                <span
-                  className="absolute -bottom-0.5 left-0 right-0 h-px bg-amber-400 origin-left group-hover:scale-x-100 scale-x-0"
-                  style={{ transition: 'transform 0.25s ease' }}
-                />
               </a>
             ))}
 
