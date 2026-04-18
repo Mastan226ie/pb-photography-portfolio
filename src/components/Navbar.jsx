@@ -1,19 +1,20 @@
 import React, { useState, useCallback } from 'react'
-import { motion, useScroll, useTransform, useMotionTemplate } from 'framer-motion'
+import { motion, useScroll, useTransform, useMotionTemplate, useSpring } from 'framer-motion'
 import { Camera, Menu, X } from 'lucide-react'
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false)
 
   const { scrollY } = useScroll()
-  const bgOpacity = useTransform(scrollY, [0, 100], [0, 0.85])
+  const smoothY = useSpring(scrollY, { stiffness: 60, damping: 20, restDelta: 1 })
+  const bgOpacity = useTransform(smoothY, [0, 100], [0, 0.85])
   const bg = useMotionTemplate`rgba(0, 0, 0, ${bgOpacity})`
-  const blurValue = useTransform(scrollY, [0, 100], [0, 12])
+  const blurValue = useTransform(smoothY, [0, 100], [0, 12])
   const backdropFilter = useMotionTemplate`blur(${blurValue}px)`
-  const borderOpacity = useTransform(scrollY, [0, 100], [0, 0.06])
+  const borderOpacity = useTransform(smoothY, [0, 100], [0, 0.06])
   const borderBottom = useMotionTemplate`1px solid rgba(255, 255, 255, ${borderOpacity})`
   // 1.25rem = 20px (py-5), 0.75rem = 12px (py-3)
-  const py = useTransform(scrollY, [0, 100], ['1.25rem', '0.75rem'])
+  const py = useTransform(smoothY, [0, 100], ['1.25rem', '0.75rem'])
 
   const closeMenu = useCallback(() => setIsOpen(false), [])
 
@@ -32,7 +33,7 @@ const Navbar = () => {
         initial={{ y: -80, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-        className="fixed w-full z-50 transition-all duration-300"
+        className="fixed w-full z-50"
         style={{
           paddingTop: py,
           paddingBottom: py,
