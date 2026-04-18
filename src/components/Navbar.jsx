@@ -1,16 +1,19 @@
-import React, { useState, useEffect, useCallback } from 'react'
-import { motion } from 'framer-motion'
+import React, { useState, useCallback } from 'react'
+import { motion, useScroll, useTransform, useMotionTemplate } from 'framer-motion'
 import { Camera, Menu, X } from 'lucide-react'
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false)
-  const [scrolled, setScrolled] = useState(false)
 
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 60)
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
+  const { scrollY } = useScroll()
+  const bgOpacity = useTransform(scrollY, [0, 100], [0, 0.85])
+  const bg = useMotionTemplate`rgba(0, 0, 0, ${bgOpacity})`
+  const blurValue = useTransform(scrollY, [0, 100], [0, 12])
+  const backdropFilter = useMotionTemplate`blur(${blurValue}px)`
+  const borderOpacity = useTransform(scrollY, [0, 100], [0, 0.06])
+  const borderBottom = useMotionTemplate`1px solid rgba(255, 255, 255, ${borderOpacity})`
+  // 1.25rem = 20px (py-5), 0.75rem = 12px (py-3)
+  const py = useTransform(scrollY, [0, 100], ['1.25rem', '0.75rem'])
 
   const closeMenu = useCallback(() => setIsOpen(false), [])
 
@@ -29,19 +32,15 @@ const Navbar = () => {
         initial={{ y: -80, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-        className={`fixed w-full z-50 transition-all duration-500 ${
-          scrolled
-            ? 'py-3'
-            : 'py-5'
-        }`}
+        className="fixed w-full z-50 transition-all duration-300"
         style={{
-          background: scrolled
-            ? 'rgba(0, 0, 0, 0.85)'
-            : 'transparent',
-          backdropFilter: scrolled ? 'blur(12px)' : 'none',
-          WebkitBackdropFilter: scrolled ? 'blur(12px)' : 'none',
-          borderBottom: scrolled ? '1px solid rgba(255,255,255,0.06)' : 'none',
-          willChange: 'background, backdrop-filter',
+          paddingTop: py,
+          paddingBottom: py,
+          background: bg,
+          backdropFilter: backdropFilter,
+          WebkitBackdropFilter: backdropFilter,
+          borderBottom: borderBottom,
+          willChange: 'background, backdrop-filter, padding',
         }}
       >
         <div className="container-custom flex justify-between items-center">
