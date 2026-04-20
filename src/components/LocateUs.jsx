@@ -198,7 +198,7 @@ const LocateUs = () => {
 
               {/* Minimal Map Container */}
               <div 
-                className="flex-1 rounded-xl overflow-hidden relative ring-1 ring-white/10 group-hover:ring-amber-500/30 transition-all duration-500 min-h-[300px]"
+                className="flex-1 rounded-xl overflow-hidden relative ring-1 ring-white/10 group-hover:ring-amber-500/30 transition-all duration-500 min-h-[250px] sm:min-h-[300px] lg:h-full"
                 onMouseEnter={() => setMapHovered(true)}
                 onMouseLeave={() => { setMapHovered(false); setMapInteractive(false); }}
                 onClick={() => setMapInteractive(true)}

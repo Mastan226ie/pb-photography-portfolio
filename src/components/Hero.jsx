@@ -39,6 +39,7 @@ const Hero = () => {
       id="home"
       ref={ref}
       className="relative min-h-screen flex items-center justify-center overflow-hidden"
+      style={{ background: '#0a0a0a' }}
     >
       {/* ── Background image (parallax) ───── */}
       <motion.div
@@ -46,7 +47,7 @@ const Hero = () => {
         className="absolute inset-0 scale-110"
       >
         <img
-          src="https://images.unsplash.com/photo-1554048612-b6a482bc67e5?w=1800&h=1000&fit=crop"
+          src="/p1.png"
           alt="Cinematic photography background"
           className="w-full h-full object-cover"
         />
@@ -80,7 +81,7 @@ const Hero = () => {
       {/* ── Main Content ─────────────────────── */}
       <motion.div
         style={{ y: textY, opacity }}
-        className="container-custom relative z-20"
+        className="container-custom relative z-20 pt-24 md:pt-0"
       >
         <div className="max-w-3xl">
           <div className="overflow-hidden">
@@ -88,7 +89,7 @@ const Hero = () => {
               initial={{ opacity: 0, y: 100 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1.1, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-              className="text-5xl md:text-7xl xl:text-8xl font-playfair font-bold leading-[1.08] mb-7"
+              className="text-4xl sm:text-5xl md:text-7xl xl:text-8xl font-playfair font-bold leading-[1.08] mb-5 md:mb-7"
             >
               Capturing Moments,
               <br />Creating{' '}

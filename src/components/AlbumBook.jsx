@@ -189,9 +189,26 @@ PhotoPage.displayName = 'PhotoPage'
 ══════════════════════════════════════════════ */
 const AlbumBook = ({ album, onClose }) => {
   const bookRef = useRef(null)
+  const [windowSize, setWindowSize] = useState({
+    width: typeof window !== 'undefined' ? window.innerWidth : 1200,
+    height: typeof window !== 'undefined' ? window.innerHeight : 800
+  })
   const [currentPage, setCurrentPage] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
   const [isFlipping, setIsFlipping] = useState(false)
+
+  useEffect(() => {
+    const handleResize = () => setWindowSize({
+      width: window.innerWidth,
+      height: window.innerHeight
+    })
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  const isMobile = windowSize.width < 768
+  const bookWidth = isMobile ? Math.min(windowSize.width * 0.85, 340) : 380
+  const bookHeight = isMobile ? Math.min(windowSize.height * 0.6, 480) : 520
 
   const photos = album.photos || []
   const innerPagePairs = Math.ceil(photos.length / 2)
@@ -261,32 +278,49 @@ const AlbumBook = ({ album, onClose }) => {
       </div>
 
       {/* Header */}
-      <div className="relative z-10 flex items-center justify-between w-full max-w-5xl px-6 mb-6">
-        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.25 }} className="flex items-center gap-3">
-          <BookOpen className="w-5 h-5 text-amber-400" />
-          <span className="text-amber-400 font-playfair font-semibold text-lg">{album.title}</span>
+      <div className="relative z-10 flex items-center justify-between w-full max-w-5xl px-4 sm:px-6 mb-4 sm:mb-6">
+        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.25 }} className="flex items-center gap-2 sm:gap-3">
+          <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400" />
+          <span className="text-amber-400 font-playfair font-semibold text-base sm:text-lg truncate max-w-[200px]">{album.title}</span>
         </motion.div>
         <motion.button initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.25 }}
           onClick={onClose} className="flex items-center gap-1.5 text-white/45 hover:text-white transition-colors group">
-          <span className="text-xs tracking-wider group-hover:text-amber-400 transition-colors font-poppins">Close</span>
-          <X className="w-5 h-5 group-hover:text-amber-400 transition-colors" />
+          <span className="text-[10px] sm:text-xs tracking-wider group-hover:text-amber-400 transition-colors font-poppins">Close</span>
+          <X className="w-4 h-4 sm:w-5 sm:h-5 group-hover:text-amber-400 transition-colors" />
         </motion.button>
       </div>
 
-      {/* Book + Arrows */}
-      <div className="relative z-10 flex items-center justify-center gap-5">
+      {/* Book + Arrows Container */}
+      <div className="relative z-10 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-5 w-full">
 
-        {/* Prev */}
-        <motion.div
-          initial={{ opacity: 0, x: 16 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-        >
-          <button onClick={flipPrev} disabled={isFirst || isFlipping}
-            className={`flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center shadow-xl transition-all hover:scale-110 active:scale-95 duration-200 ${isFirst ? 'opacity-20 cursor-not-allowed bg-white/5' : 'bg-amber-500/90 hover:bg-amber-400 cursor-pointer'}`}>
-            <ChevronLeft className="w-6 h-6 text-white" />
-          </button>
-        </motion.div>
+        {/* Controls - Stacks on bottom for mobile */}
+        <div className="flex sm:contents order-last sm:order-none gap-8">
+          {/* Prev */}
+          <motion.div
+            initial={{ opacity: 0, x: 16 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+          >
+            <button onClick={flipPrev} disabled={isFirst || isFlipping}
+              className={`flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center shadow-xl transition-all hover:scale-110 active:scale-95 duration-200 ${isFirst ? 'opacity-20 cursor-not-allowed bg-white/5' : 'bg-amber-500/90 hover:bg-amber-400 cursor-pointer'}`}>
+              <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+            </button>
+          </motion.div>
+
+          {/* Next Button for mobile (cloning here for stacked layout) */}
+          <div className="sm:hidden">
+            <motion.div
+              initial={{ opacity: 0, x: -16 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+            >
+              <button onClick={flipNext} disabled={isLast || isFlipping}
+                className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center shadow-xl transition-all hover:scale-110 active:scale-95 duration-200 ${isLast ? 'opacity-20 cursor-not-allowed bg-white/5' : 'bg-amber-500/90 hover:bg-amber-400 cursor-pointer'}`}>
+                <ChevronRight className="w-5 h-5 text-white" />
+              </button>
+            </motion.div>
+          </div>
+        </div>
 
         {/* Book */}
         <motion.div 
@@ -297,10 +331,10 @@ const AlbumBook = ({ album, onClose }) => {
         >
           <HTMLFlipBook
             ref={bookRef}
-            width={380}
-            height={520}
+            width={bookWidth}
+            height={bookHeight}
             size="fixed"
-            minWidth={200}
+            minWidth={isMobile ? 240 : 200}
             maxWidth={500}
             minHeight={300}
             maxHeight={700}
@@ -310,7 +344,7 @@ const AlbumBook = ({ album, onClose }) => {
             onFlip={(e) => setCurrentPage(e.data)}
             className="book-flip"
             flippingTime={600}
-            usePortrait={false}
+            usePortrait={isMobile}
             startZIndex={0}
             autoSize={false}
             drawShadow={true}
@@ -343,17 +377,19 @@ const AlbumBook = ({ album, onClose }) => {
           </HTMLFlipBook>
         </motion.div>
 
-        {/* Next */}
-        <motion.div
-           initial={{ opacity: 0, x: -16 }}
-           animate={{ opacity: 1, x: 0 }}
-           transition={{ duration: 0.5, delay: 0.3 }}
-        >
-          <button onClick={flipNext} disabled={isLast || isFlipping}
-            className={`flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center shadow-xl transition-all hover:scale-110 active:scale-95 duration-200 ${isLast ? 'opacity-20 cursor-not-allowed bg-white/5' : 'bg-amber-500/90 hover:bg-amber-400 cursor-pointer'}`}>
-            <ChevronRight className="w-6 h-6 text-white" />
-          </button>
-        </motion.div>
+        {/* Next (desktop only) */}
+        <div className="hidden sm:block">
+          <motion.div
+             initial={{ opacity: 0, x: -16 }}
+             animate={{ opacity: 1, x: 0 }}
+             transition={{ duration: 0.5, delay: 0.3 }}
+          >
+            <button onClick={flipNext} disabled={isLast || isFlipping}
+              className={`flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center shadow-xl transition-all hover:scale-110 active:scale-95 duration-200 ${isLast ? 'opacity-20 cursor-not-allowed bg-white/5' : 'bg-amber-500/90 hover:bg-amber-400 cursor-pointer'}`}>
+              <ChevronRight className="w-6 h-6 text-white" />
+            </button>
+          </motion.div>
+        </div>
       </div>
 
       {/* Progress dots */}

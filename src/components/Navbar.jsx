@@ -29,10 +29,7 @@ const Navbar = () => {
     <>
       {/* ── Navbar ───────────────────────── */}
       <motion.nav
-        initial={{ y: -80, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-        className="fixed w-full z-50"
+        className="fixed top-0 inset-x-0 max-w-[100vw] z-[9990] overflow-x-clip"
         style={{
           paddingTop: py,
           paddingBottom: py,
@@ -41,9 +38,10 @@ const Navbar = () => {
           WebkitBackdropFilter: backdropFilter,
           borderBottom: borderBottom,
           willChange: 'background, backdrop-filter, padding',
+          transform: 'none',
         }}
       >
-        <div className="container-custom flex justify-between items-center">
+        <div className="container-custom flex justify-between items-center w-full">
           {/* ── Logo ──────────────────────── */}
           <a
             href="#home"
@@ -87,14 +85,34 @@ const Navbar = () => {
           </div>
 
           {/* ── Mobile Hamburger ──────────── */}
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            className="md:hidden w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white"
+          <button
+            className="md:hidden flex items-center justify-center text-white"
+            style={{
+              width: '42px',
+              height: '42px',
+              borderRadius: '50%',
+              background: 'rgba(245, 158, 11, 0.15)',
+              border: '1.5px solid rgba(245, 158, 11, 0.5)',
+              flexShrink: 0,
+              cursor: 'pointer',
+              zIndex: 9999,
+              position: 'relative',
+              transition: 'background 0.2s ease, border-color 0.2s ease',
+              boxShadow: '0 0 12px rgba(245,158,11,0.15)',
+            }}
             onClick={() => setIsOpen(v => !v)}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = 'rgba(245,158,11,0.28)'
+              e.currentTarget.style.borderColor = 'rgba(245,158,11,0.8)'
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = 'rgba(245,158,11,0.15)'
+              e.currentTarget.style.borderColor = 'rgba(245,158,11,0.5)'
+            }}
             aria-label={isOpen ? 'Close menu' : 'Open menu'}
           >
-            {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </motion.button>
+            {isOpen ? <X className="w-5 h-5 text-amber-400" /> : <Menu className="w-5 h-5 text-amber-400" />}
+          </button>
         </div>
 
         {/* ── Mobile Menu ───────────────────────── */}
@@ -106,8 +124,8 @@ const Navbar = () => {
             transition={{ duration: 0.25 }}
             className="md:hidden mt-3 mx-4 rounded-2xl overflow-hidden"
             style={{
-              background: 'rgba(10,10,10,0.95)',
-              backdropFilter: 'blur(16px)',
+              background: 'rgba(10,10,10,0.98)',
+              backdropFilter: 'blur(24px)',
               border: '1px solid rgba(255,255,255,0.08)',
             }}
           >

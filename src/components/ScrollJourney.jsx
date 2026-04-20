@@ -21,10 +21,10 @@ import {
 
 /* ── Content that bursts through the lens ──────── */
 const CONTENT_LAYERS = [
-  { id: 'midcopy',    focalAt: 0.52, component: MidCopy    },
-  { id: 'filmstrip',  focalAt: 0.65, component: FilmStrip  },
-  { id: 'photoframe', focalAt: 0.78, component: FloatingFrame },
-  { id: 'titlecard',  focalAt: 0.90, component: TitleCard  },
+  { id: 'midcopy',    focalAt: 0.38, component: MidCopy    },
+  { id: 'filmstrip',  focalAt: 0.50, component: FilmStrip  },
+  { id: 'photoframe', focalAt: 0.62, component: FloatingFrame },
+  { id: 'titlecard',  focalAt: 0.74, component: TitleCard  },
 ]
 
 /* ── Map [0→1] progress to per-layer transform ───── */
@@ -38,9 +38,9 @@ function useContentLayer(scrollProgress, focalAt) {
 
   const scale = useTransform(scrollProgress, (v) => {
     if (v < focalAt - HALF_WIN) return 0.1   // tiny, inside the lens
-    if (v > focalAt + HALF_WIN) return 1.45  // blown past
+    if (v > focalAt + HALF_WIN) return 1.5   // blown past
     const t = (v - (focalAt - HALF_WIN)) / (HALF_WIN * 2)
-    return 0.1 + t * (1 - 0.1)
+    return 0.1 + t * (1.35 - 0.1)
   })
 
   const z = useTransform(scrollProgress, (v) => {
@@ -58,6 +58,17 @@ function useContentLayer(scrollProgress, focalAt) {
    ══════════════════════════════════════════════ */
 const ScrollJourney = () => {
   const containerRef = useRef(null)
+  const [windowWidth, setWindowWidth] = React.useState(typeof window !== 'undefined' ? window.innerWidth : 1200)
+
+  React.useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  const isMobile = windowWidth < 768
+  const lensSize = isMobile ? Math.min(windowWidth * 0.8, 320) : 420
+
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ['start start', 'end end'],
@@ -66,13 +77,18 @@ const ScrollJourney = () => {
   /*
    * Phase 1 (0 → 0.42): Lens zooms in from small → fills screen
    *   • Iris opens during 0.14 → 0.42
-   * Phase 2 (0.42 → 1.0): Content bursts through the open aperture
+   * Phase 2 (0.35 → 0.85): Content bursts through the open aperture while lens is still visible
    */
   const lensScale   = useTransform(scrollYProgress, [0, 0.42], [0.45, 5.2])
-  const lensOpacity = useTransform(scrollYProgress, [0, 0.05, 0.36, 0.46], [0, 1, 1, 0])
+  
+  /* Keep the lens visible longer so content comes out of it */
+  const lensOpacity = useTransform(scrollYProgress, [0, 0.05, 0.85, 0.95], [0, 1, 1, 0])
 
   /* Iris opens as the lens zooms in — 0 = fully closed, 1 = wide open */
   const irisProgress = useTransform(scrollYProgress, [0.12, 0.42], [0, 1])
+
+  /* Lens rotates as it zooms, simulating rolling the focus/zoom ring */
+  const lensRotate = useTransform(scrollYProgress, [0, 0.42], [0, 180])
 
   /* End section teaser — shows after last content card (0.90) fades */
   const endOpacity = useTransform(scrollYProgress, [0.94, 0.99], [0, 1])
@@ -111,19 +127,20 @@ const ScrollJourney = () => {
           style={{
             scale: lensScale,
             opacity: lensOpacity,
+            rotate: lensRotate,
             position: 'absolute',
             left: 0,
             right: 0,
             top: 0,
             bottom: 0,
             margin: 'auto',
-            width: 420,
-            height: 420,
+            width: lensSize,
+            height: lensSize,
             willChange: 'transform, opacity',
             zIndex: 20,
           }}
         >
-          <LensElement size={420} irisProgress={irisProgress} />
+          <LensElement size={lensSize} irisProgress={irisProgress} />
         </motion.div>
 
         {/* ── CONTENT (phase 2) ─────────────────── */}
@@ -147,8 +164,10 @@ const ScrollJourney = () => {
           </p>
         </motion.div>
 
-        {/* Scroll progress pip */}
-        <ScrollProgressPip progress={scrollYProgress} />
+        {/* Scroll progress pip — hidden on mobile */}
+        <div className="hidden md:block">
+          <ScrollProgressPip progress={scrollYProgress} />
+        </div>
       </div>
     </section>
   )
@@ -232,20 +251,42 @@ function LensElement({ size = 420, irisProgress }) {
         {Array.from({ length: RINGS }).map((_, i) => {
           const z   = i * -28
           const isFront = i === 0
+          const isInnerGoldRing = i === 1
+          
           return (
             <div
               key={`barrel-${i}`}
               className="absolute inset-0 rounded-full"
               style={{
-                background: isFront ? '#090909' : 'transparent',
-                border: isFront ? '18px solid #141414' : '4px solid #1c1c1c',
-                boxShadow: isFront ? 'inset 0 0 60px rgba(0,0,0,1)' : 'none',
+                background: isFront ? '#111' : isInnerGoldRing ? 'linear-gradient(145deg, #f59e0b, #b45309, #fde68a)' : 'transparent',
+                border: isFront ? '24px solid #1a1a1a' : isInnerGoldRing ? '4px solid #b45309' : '4px solid #1c1c1c',
+                boxShadow: isFront ? 'inset 0 0 40px rgba(0,0,0,1)' : isInnerGoldRing ? '0 0 10px rgba(245,158,11,0.5), inset 0 0 15px rgba(0,0,0,0.8)' : 'none',
                 transform: `translateZ(${z}px)`,
                 transformStyle: 'preserve-3d',
               }}
             >
-              {!isFront && i < RINGS - 1 && (
+              {!isFront && !isInnerGoldRing && i < RINGS - 1 && (
                 <div className="absolute inset-0 rounded-full border-[10px] border-[#090909] opacity-80" />
+              )}
+              {/* Outer ribbed grip ring simulation */}
+              {isFront && (
+                 <div className="absolute inset-[-28px] rounded-full border-[6px] border-dashed border-[#222]" />
+              )}
+              {isFront && (
+                 <>
+                   {/* Bottom Text (FE 1.8/85) */}
+                   <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-[13px] text-white/80 tracking-wider font-sans whitespace-nowrap text-center z-50">
+                     FE 1.8/85
+                   </div>
+                   {/* Top Left Text (0.8m/2.63ft) */}
+                   <div className="absolute top-12 left-8 text-[12px] text-white/80 tracking-wide font-sans whitespace-nowrap z-50 transform rotate-[-45deg]">
+                     0.8m/2.63ft
+                   </div>
+                   {/* Right Text (Φ67) */}
+                   <div className="absolute top-1/2 right-4 -translate-y-1/2 text-[12px] text-white/80 tracking-wide font-sans whitespace-nowrap z-50 transform rotate-[90deg]">
+                     Φ67
+                   </div>
+                 </>
               )}
             </div>
           )
@@ -304,16 +345,17 @@ function IrisOverlay({ progress }) {
 
   return (
     <div className="absolute inset-0 pointer-events-none" style={{ borderRadius: '50%', overflow: 'hidden' }}>
-      {/* Blades */}
+      {/* Blades - simulated shutter aperture */}
       {Array.from({ length: BLADES }).map((_, i) => (
         <motion.div
           key={i}
-          className="absolute"
+          className="absolute shadow-lg"
           style={{
             width: '120%',
             height: '100%',
-            background: 'linear-gradient(to right, rgba(8,8,8,0.97), rgba(18,18,18,0.97))',
-            borderLeft: '1px solid rgba(245,158,11,0.35)',
+            background: 'linear-gradient(to bottom right, #111 0%, #2a2a2a 100%)',
+            borderLeft: '1px solid #555',
+            borderTop: '1px solid #444',
             transformOrigin: '0% 100%',
             left: '50%',
             top: '-50%',
@@ -361,11 +403,11 @@ function IrisOverlay({ progress }) {
 /* ── Mid Copy ─────────────────────────────── */
 function MidCopy() {
   return (
-    <div className="text-center px-4" style={{ width: 600 }}>
-      <p className="text-amber-400/70 text-sm tracking-[0.35em] uppercase mb-3 font-poppins">
+    <div className="text-center px-4 w-[90vw] md:w-[680px]">
+      <p className="text-amber-400/70 text-xs md:text-base tracking-[0.35em] uppercase mb-3 font-poppins">
         Through the lens
       </p>
-      <h2 className="font-playfair text-5xl md:text-7xl font-bold text-white/80 leading-tight drop-shadow-2xl">
+      <h2 className="font-playfair text-4xl md:text-7xl font-bold text-white/80 leading-tight drop-shadow-2xl">
         Every Frame<br />
         <span className="text-amber-400">Tells a Story</span>
       </h2>
@@ -383,32 +425,31 @@ function FilmStrip() {
   ]
   return (
     <div
-      className="relative flex gap-1 rounded-md overflow-hidden"
+      className="relative flex gap-2 rounded-lg overflow-hidden"
       style={{
         background: '#111',
-        padding: '10px 8px',
-        border: '2px solid #333',
-        boxShadow: '0 0 40px rgba(0,0,0,0.8)',
+        padding: '16px 12px',
+        border: '3px solid #333',
+        boxShadow: '0 0 50px rgba(0,0,0,0.85)',
       }}
     >
       {/* Top perforations */}
-      <div className="absolute top-1.5 left-0 right-0 flex justify-around items-center px-2">
-        {Array.from({ length: 10 }, (_, i) => (
-          <div key={i} className="w-2 h-1.5 bg-gray-700 rounded-sm" />
+      <div className="absolute top-2 left-0 right-0 flex justify-around items-center px-3">
+        {Array.from({ length: 12 }, (_, i) => (
+          <div key={i} className="w-2.5 h-1.5 bg-gray-700/80 rounded-sm" />
         ))}
       </div>
       {/* Bottom perforations */}
-      <div className="absolute bottom-1.5 left-0 right-0 flex justify-around items-center px-2">
-        {Array.from({ length: 10 }, (_, i) => (
-          <div key={i} className="w-2 h-1.5 bg-gray-700 rounded-sm" />
+      <div className="absolute bottom-2 left-0 right-0 flex justify-around items-center px-3">
+        {Array.from({ length: 12 }, (_, i) => (
+          <div key={i} className="w-2.5 h-1.5 bg-gray-700/80 rounded-sm" />
         ))}
       </div>
       {/* Photo frames */}
       {frames.map((src, i) => (
         <div
           key={i}
-          style={{ width: 90, height: 68, flexShrink: 0 }}
-          className="overflow-hidden rounded-sm ring-1 ring-white/10"
+          className="w-20 h-16 sm:w-32 sm:h-24 md:w-[140px] md:h-[105px] overflow-hidden rounded-md ring-2 ring-white/10 flex-shrink-0"
         >
           <img
             src={src}
@@ -419,9 +460,9 @@ function FilmStrip() {
         </div>
       ))}
       {/* Frame numbers */}
-      <div className="absolute bottom-3 left-0 right-0 flex justify-around px-2">
+      <div className="absolute bottom-4 left-0 right-0 flex justify-around px-4">
         {frames.map((_, i) => (
-          <span key={i} className="text-[8px] text-amber-500/40 font-mono tabular-nums">
+          <span key={i} className="text-[10px] text-amber-500/40 font-mono tabular-nums">
             {(i + 1).toString().padStart(2, '0')}
           </span>
         ))}
@@ -433,25 +474,25 @@ function FilmStrip() {
 /* ── Floating Photo Frame ────────────────── */
 function FloatingFrame() {
   return (
-    <div className="relative" style={{ width: 300 }}>
+    <div className="relative w-[280px] sm:w-[320px]">
       {/* Back polaroid */}
       <div
-        className="absolute bg-white rounded-sm shadow-2xl"
-        style={{ width: 240, padding: 10, bottom: -16, left: 30, transform: 'rotate(6deg)', zIndex: 0 }}
+        className="absolute bg-white rounded-md shadow-2xl"
+        style={{ width: '80%', padding: 10, bottom: -12, left: 20, transform: 'rotate(6deg)', zIndex: 0 }}
       >
-        <div style={{ height: 180, background: '#ddd' }} className="rounded-sm" />
-        <div className="h-10" />
+        <div style={{ height: 150, background: '#ddd' }} className="rounded-sm" />
+        <div className="h-8" />
       </div>
       {/* Front polaroid */}
-      <div className="relative bg-white rounded-sm shadow-2xl z-10" style={{ width: 260, padding: 12 }}>
-        <div style={{ height: 200 }} className="overflow-hidden rounded-sm">
+      <div className="relative bg-white rounded-md shadow-2xl z-10 w-full" style={{ padding: 12 }}>
+        <div style={{ height: 180 }} className="overflow-hidden rounded-sm">
           <img
-            src="https://images.unsplash.com/photo-1554048612-b6a482bc67e5?w=400&h=280&fit=crop"
+            src="https://images.unsplash.com/photo-1554048612-b6a482bc67e5?w=450&h=300&fit=crop"
             alt="polaroid"
             className="w-full h-full object-cover"
           />
         </div>
-        <div className="h-12 flex items-center justify-center font-playfair italic text-amber-900/50 text-sm">
+        <div className="h-10 flex items-center justify-center font-playfair italic text-amber-900/50 text-sm md:text-base">
           Wedding Day ♥
         </div>
       </div>
@@ -462,16 +503,16 @@ function FloatingFrame() {
 /* ── Title Card ──────────────────────────── */
 function TitleCard() {
   return (
-    <div className="text-center px-8" style={{ maxWidth: 600 }}>
+    <div className="text-center px-6 w-[95vw] md:max-w-[680px]">
       <div className="flex items-center gap-4 mb-6">
         <div className="flex-1 h-px bg-gradient-to-r from-transparent to-amber-500/50" />
         <div className="w-2 h-2 rounded-full bg-amber-500" />
         <div className="flex-1 h-px bg-gradient-to-l from-transparent to-amber-500/50" />
       </div>
-      <p className="text-amber-400/80 text-xs tracking-[0.4em] uppercase mb-4 font-poppins">
+      <p className="text-amber-400/80 text-base tracking-[0.4em] uppercase mb-4 font-poppins">
         PB Photography
       </p>
-      <h3 className="font-playfair text-4xl md:text-5xl font-bold text-white mb-4 leading-tight">
+      <h3 className="font-playfair text-4xl md:text-6xl font-bold text-white mb-4 leading-tight">
         Let's Create<br />
         <span className="text-amber-400">Something</span> Timeless
       </h3>
