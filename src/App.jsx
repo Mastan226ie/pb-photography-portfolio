@@ -18,48 +18,48 @@ import SmoothScroll from './components/SmoothScroll'
 import AdminApp from './AdminApp'
 
 const Home = () => {
-    const [portalDone, setPortalDone] = useState(false)
-  
-    const handlePortalComplete = useCallback(() => {
-      setPortalDone(true)
-    }, [])
-  
-    return (
-      <>
-        {/* ── Portal Loader ─────────────────── */}
-        <AnimatePresence mode="wait">
-          {!portalDone && (
-            <PortalLoader key="portal" onComplete={handlePortalComplete} />
-          )}
-        </AnimatePresence>
-  
-        {/* ── Main Site Content ─────────────── */}
-        <AnimatePresence>
-          {portalDone && (
-            <SmoothScroll>
-              <motion.div
-                key="site"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.8, ease: 'easeOut' }}
-                className="bg-black min-h-screen"
-              >
-                <Navbar />
-                <main>
-                  <Hero />
-                  <ScrollJourney />
-                  <AlbumCollection />
-                  <Testimonials />
-                  <ContactForm />
-                  <LocateUs />
-                </main>
-                <Footer />
-              </motion.div>
-            </SmoothScroll>
-          )}
-        </AnimatePresence>
-      </>
-    )
+  const [portalDone, setPortalDone] = useState(false)
+
+  const handlePortalComplete = useCallback(() => {
+    setPortalDone(true)
+  }, [])
+
+  return (
+    <>
+      {/* ── Portal Loader ─────────────────── */}
+      <AnimatePresence mode="wait">
+        {!portalDone && (
+          <PortalLoader key="portal" onComplete={handlePortalComplete} />
+        )}
+      </AnimatePresence>
+
+      {/* ── Main Site Content ─────────────── */}
+      <AnimatePresence>
+        {portalDone && (
+          <SmoothScroll>
+            <motion.div
+              key="site"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.8, ease: 'easeOut' }}
+              className="bg-black min-h-screen w-full max-w-[100vw] overflow-x-clip"
+            >
+              <Navbar />
+              <main>
+                <Hero />
+                <ScrollJourney />
+                <AlbumCollection />
+                <Testimonials />
+                <ContactForm />
+                <LocateUs />
+              </main>
+              <Footer />
+            </motion.div>
+          </SmoothScroll>
+        )}
+      </AnimatePresence>
+    </>
+  )
 }
 
 function App() {
@@ -67,7 +67,7 @@ function App() {
     <Routes>
       {/* Portfolio Home */}
       <Route path="/" element={<Home />} />
-      
+
       {/* Admin Panel (isolated) */}
       <Route path="/admin/*" element={<AdminApp />} />
     </Routes>

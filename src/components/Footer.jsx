@@ -7,9 +7,9 @@ const Footer = () => {
   return (
     <footer className="bg-black border-t border-gray-800 pt-16 pb-8">
       <div className="container-custom">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
           {/* Brand */}
-          <div className="md:col-span-2 lg:col-span-2">
+          <div className="col-span-2 md:col-span-2 lg:col-span-2">
             <div className="flex items-center space-x-3 mb-4">
               <img src="/pbphotography.png" alt="PB Photography Logo" className="w-8 h-8 object-contain" />
               <span className="text-2xl font-playfair font-bold text-white">PB Photography</span>
