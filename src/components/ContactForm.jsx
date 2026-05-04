@@ -84,6 +84,7 @@ const ContactForm = () => {
                 <div className="space-y-8">
                   {[
                     { Icon: Phone,  label: 'Phone',    value: '+91 80083 60032',              href: 'tel:+918008360032' },
+                    { Icon: Phone,  label: 'Phone',    value: '+91 96425 34945',              href: 'tel:+919642534945' },
                     { Icon: Mail,   label: 'Email',    value: 'pbvideography.0032@gmail.com', href: 'mailto:pbvideography.0032@gmail.com' },
                     { Icon: MapPin, label: 'Location', value: 'Vijayawada, Andhra Pradesh' },
                     { Icon: Clock,  label: 'Hours',    value: 'Mon – Sat · 9 AM – 9 PM' },
